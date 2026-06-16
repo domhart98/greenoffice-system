@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { custom } from "zod";
 import { Product } from "@/types/product";
+import { Customer } from "@/types/customer";
 
 type Item = {
   productId?: number;
@@ -14,6 +15,8 @@ type Item = {
 export default function InvoiceForm() {
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerId, setCustomerId] = useState<number | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<number>();  
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
@@ -80,7 +83,6 @@ export default function InvoiceForm() {
         description: product.name,
         rate: Number(product.price),
     };
-
     setItems(updated);
   };
 
@@ -152,6 +154,15 @@ export default function InvoiceForm() {
     }, 
   []);
 
+  useEffect(() => {
+    fetch("/api/customers")
+        .then((res) => res.json())
+        .then((data) => {
+        setCustomers(data);
+        });
+    }, 
+  []);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
@@ -159,7 +170,7 @@ export default function InvoiceForm() {
             <label className="block mb-2">Invoice #</label>
             <input className="border p-2 w-full bg-gray-100"
                    value={invoiceNumber ?? ""}
-                   disabled
+                   disabled={true}
             />
         </div>
 
@@ -178,8 +189,33 @@ export default function InvoiceForm() {
                    onChange={(e) => setTerms(e.target.value)}
             />
         </div>
-      </div>
-      <div>
+        </div>
+          <label className="block mb-1">
+            Customer
+          </label>
+          <select 
+            onChange={(e) => {
+              const customer = customers.find(
+                (c) => c.id === Number(e.target.value)
+              );
+
+              if(!customer) return;
+
+              setCustomerName(customer.name);
+              setCustomerAddress(customer.address)
+            }}
+          >
+            <option value="">
+                Select Customer
+            </option>
+
+            {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+            ))}
+        </select>
+        <div>
         <label className="block mb-2">Customer Name</label>
         <input className="border p-2 w-full" type="text"
                value={customerName}

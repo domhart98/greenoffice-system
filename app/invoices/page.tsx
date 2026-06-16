@@ -36,7 +36,7 @@ export default function InvoicesPage() {
         />
       </div>
 
-      <table className="w-full border">
+      <table className="w-full border mb-8">
         <thead>
           <tr>
             <th>Invoice #</th>
@@ -67,6 +67,7 @@ export default function InvoicesPage() {
           ))}
         </tbody>
       </table>
+      <a className="bg-green-300 rounded-full p-2 mt-8" href="/invoices/new">Add New Invoices</a>
     </div>
   );
 }
