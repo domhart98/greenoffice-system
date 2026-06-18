@@ -8,4 +8,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
 });
 
+if (!process.env.DB_USER) {
+  throw new Error(
+    "DB_USER environment variable not loaded"
+  );
+}
+
 export default pool;

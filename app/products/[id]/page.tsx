@@ -1,27 +1,27 @@
 import pool from "@/lib/db";
 
-export default async function CustomerPage({
+export default async function ProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  const [customerRows] = await pool.query(
+  const [productRows] = await pool.query(
     `
     SELECT *
-    FROM customers
+    FROM products
     WHERE id = ?
     `,
     [id]
   );
 
-  const customer = (customerRows as any[])[0];
+  const product = (productRows as any[])[0];
 
-  if (!customer) {
+  if (!product) {
     return (
       <div className="p-6">
-        Customer not found
+        Product not found
       </div>
     );
   }
@@ -29,7 +29,7 @@ export default async function CustomerPage({
   return (
     <div className="mt-4 rounded-lg  border bg-white shadow-sm p-4">
         <h3 className="font-semibold text-lg mb-3">
-        Customer Details
+        Product Details
         </h3>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -39,46 +39,46 @@ export default async function CustomerPage({
             </div>
 
             <div>
-            {customer.name}
+            {product.name}
             </div>
         </div>
 
         <div>
             <div className="text-gray-500">
-            Phone
+            SKU
             </div>
 
             <div>
-            {customer.phone}
+            {product.sku}
             </div>
         </div>
 
         <div className="col-span-2">
             <div className="text-gray-500">
-            Address
+            Price
             </div>
 
             <div className="whitespace-pre-line">
-            {customer.address}
+            {product.price}
             </div>
         </div>
 
         <div>
             <div className="text-gray-500">
-            Email
+            VAT Rate
             </div>
 
             <div>
-            {customer.email}
+            {product.vat_rate}
             </div>
         </div>
         <div>
             <div className="text-gray-500">
-            Notes
+            Is Active
             </div>
 
             <div>
-            {customer.notes}
+            {product.is_active}
             </div>
         </div>
         <div>
@@ -87,7 +87,7 @@ export default async function CustomerPage({
             </div>
 
             <div>
-              {new Date(customer.created_at).toLocaleDateString()}
+              {new Date(product.created_at).toLocaleDateString()}
             </div>
         </div>
       </div>

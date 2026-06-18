@@ -41,22 +41,27 @@ export default async function InvoicePage({
   const items = itemRows as any[];
 
   const invoiceData = {
-    invoiceNumber: invoice.invoice_number,
-    customerName: invoice.customer_name,
-    customerAddress: invoice.customer_address,
-    invoiceDate: invoice.invoice_date,
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    customer_name: invoice.customer_name,
+    customer_address: invoice.customer_address,
+    invoice_date: invoice.invoice_date,
     terms: invoice.terms,
 
-    subtotal: Number(invoice.subtotal),
-    vat: Number(invoice.vat),
-    total: Number(invoice.total),
+    subtotal: invoice.subtotal,
+    vat: invoice.vat,
+    total: invoice.total,
 
     items: items.map(item => ({
-      productId: item.product_id,
+      id: item.id,
+      invoice_id: item.invoice_id,
+      product_id: item.product_id,
       quantity: item.quantity,
-      description: item.description,
-      rate: Number(item.rate),
-      amount: Number(item.amount),
+      product_name: item.product_name,
+      product_price: item.product_price,
+      subtotal: item.subtotal,
+      vat_total: item.subtotal,
+      total:item.total,
     })),
   };
 

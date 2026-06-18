@@ -1,7 +1,8 @@
 export type Product = {
-  id: number;
+  id?: number;
   sku: string | null;
   name: string;
   price: number;
   vat_rate: number;
+  is_active: boolean;
 };

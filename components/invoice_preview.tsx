@@ -25,12 +25,12 @@ export default function InvoicePreview({ invoice }: Props) {
         <div className="text-left p-2 text-xs">
           <p>
             <strong>Invoice #:</strong>{" "}
-            {invoice.invoiceNumber}
+            {invoice.invoice_number}
           </p>
 
           <p>
             <strong>Date:</strong>{" "}
-            {new Date(invoice.invoiceDate).toLocaleDateString()}
+            {new Date(invoice.invoice_date).toLocaleDateString()}
           </p>
 
           <p>
@@ -45,9 +45,9 @@ export default function InvoicePreview({ invoice }: Props) {
           Bill To
         </h2>
         <div className="p-2 border border-solid text-xs">
-          <p>{invoice.customerName}</p>
+          <p>{invoice.customer_name}</p>
           <p className="whitespace-pre-line">
-            {invoice.customerAddress}
+            {invoice.customer_address}
           </p>
         </div>
         
@@ -57,9 +57,9 @@ export default function InvoicePreview({ invoice }: Props) {
         <thead className="text-lg">
           <tr>
             <th className="border p-2">Qty</th>
-            <th className="border p-2">Description</th>
-            <th className="border p-2">Rate</th>
-            <th className="border p-2">Amount</th>
+            <th className="border p-2">Name</th>
+            <th className="border p-2">Price</th>
+            <th className="border p-2">Total</th>
           </tr>
         </thead>
 
@@ -71,17 +71,17 @@ export default function InvoicePreview({ invoice }: Props) {
               </td>
 
               <td className="border p-2">
-                {item.description}
+                {item.product_name}
               </td>
 
               <td className="border p-2 text-right">
-                ${Number(item.rate).toFixed(2)}
+                ${Number(item.product_price).toFixed(2)}
               </td>
 
               <td className="border p-2 text-right">
                 $
                 {(
-                  item.quantity * item.rate
+                  item.quantity * item.product_price
                 ).toFixed(2)}
               </td>
             </tr>
@@ -120,6 +120,13 @@ export default function InvoicePreview({ invoice }: Props) {
       <p className="text-xs mb-6">Return cheques will incur a charge of $50.00</p>
 
       <PrintButton/>
+      <a
+        href={`/api/invoices/${invoice.invoice_number}/pdf`}
+        target="_blank"
+        className="bg-blue-600 text-white px-4 py-2 rounded print:hidden"
+      >
+        Download PDF
+      </a>
     </div>
   );
 }

@@ -8,17 +8,17 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [customerRows] = await pool.query(
+    const [productRows] = await pool.query(
       `
       SELECT *
-      FROM customers
+      FROM products
       WHERE id = ?
       `,
       [id]
     );
 
     return NextResponse.json({
-      customer: (customerRows as any[])[0],
+      product: (productRows as any[])[0],
     });
   } catch (error) {
     console.error(error);
@@ -40,21 +40,17 @@ export async function PUT(
 
     await pool.query(
       `
-      UPDATE customers
+      UPDATE products
       SET
+        sku = ?,
         name = ?,
-        address = ?,
-        phone = ?,
-        email = ?,
-        notes = ?
+        price = ?
       WHERE id = ?
       `,
       [
+        body.sku,
         body.name,
-        body.address,
-        body.phone,
-        body.email,
-        body.notes,
+        body.price,
         id
       ]
     )
@@ -65,7 +61,7 @@ export async function PUT(
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to update customer",
+        message: "Failed to update product",
       },
       {
         status: 500,
@@ -83,14 +79,14 @@ export async function DELETE(
     `
     SELECT COUNT(*) AS total
     FROM invoices
-    WHERE customer_id = ?
+    WHERE product_id = ?
     `,
     [id]
   )
 
   if (rows[0].total > 0){
     return NextResponse.json({
-        error: "Cannot Delete, Customer has invoices",
+        error: "Cannot Delete, product has invoices",
     },
     {
       status: 400,
@@ -99,7 +95,7 @@ export async function DELETE(
   
   await pool.query(
     `
-    DELETE FROM customers
+    DELETE FROM products
     WHERE id = ?
     `,
     [id]

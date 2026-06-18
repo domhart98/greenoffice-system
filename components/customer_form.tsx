@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Customer } from "@/types/customer";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
+interface CustomerFormProps {
+  mode: "create" | "edit";
+  customer?: Customer;
+}
 
-export default function CustomerForm({customer,}: {customer?: Customer}) {
+export default function CustomerForm({mode, customer,}: CustomerFormProps) {
+  const router = useRouter();
 
-  const pathname = usePathname();
-  const [id, setId] = useState(customer?.id ?? null);
   const [name, setName] = useState(customer?.name ?? "");
   const [address, setAddress] = useState(customer?.address ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
@@ -17,89 +20,63 @@ export default function CustomerForm({customer,}: {customer?: Customer}) {
     new Date().toISOString().split("T")[0]
   );
   const [notes, setNotes] = useState(customer?.notes ?? "");
-  const isNew = pathname === "/customers/new";
-  const isEdit = pathname.includes("/edit");
 
-  const handleAddCustomer = async () => {
-    const customerData = {
-        id,
-        name,
-        address,
-        phone,
-        email,
-        notes,
-    };
-
-    console.log(customerData);
-
-    const response = await fetch(
-        "/api/customers/create",
-        {
+  async function handleCreateCustomer() {
+    const response = await fetch("/api/customers/create",
+      {
         method: "POST",
+
+        headers: {
+            "Content-Type":"application/json",
+        },
+
+        body: JSON.stringify({
+          name,
+          address,
+          phone,
+          email,
+          notes
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      router.push("/customers");
+    }
+  };
+
+  async function handleUpdateCustomer(){
+    const response = await fetch(`/api/customers/${customer?.id}`,
+      {
+        method: "PUT",
 
         headers: {
             "Content-Type":
             "application/json",
         },
 
-        body: JSON.stringify(customerData),
-        }
-    );
-
-    const result = await response.json();
-
-    if (!result.success) {
-        alert("Failed to save invoice");
-        return;
-    }
-  };
-
-  const handleUpdateCustomer = async () => {
-    const customerData = {
-        id,
-        name,
-        address,
-        phone,
-        email,
-        notes,
-    };
-
-    console.log(customerData);
-
-    const response = await fetch(
-      `/api/customers/${customerData.id}`,
-      {
-      method: "PUT",
-
-      headers: {
-          "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify(customerData),
+        body: JSON.stringify({
+            name,
+            address,
+            phone,
+            email,
+            notes
+        }),
       }
     );
     
     const result = await response.json();
 
-    if (!result.success) {
-        alert("Failed to save invoice");
-        return;
+    if (result.success) {
+      router.push("/customers");
     }
-    
   };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
-        <div>
-            <label className="block mb-2">ID</label>
-            <input className="border p-2 w-full" type="number"
-                   value={id}
-                   onChange={(e) => setId(e.target.value)}
-                   disable="true"
-            />
-        </div>
         <div>
             <label className="block mb-2">Name</label>
             <input className="border p-2 w-full" type="text"
@@ -110,7 +87,7 @@ export default function CustomerForm({customer,}: {customer?: Customer}) {
 
         <div>
             <label className="block mb-2">Address</label>
-            <input className="border p-2 w-full" type="text"
+            <textarea className="border p-2 w-full"
                    value={address}
                    onChange={(e) => setAddress(e.target.value)}
             />
@@ -130,13 +107,6 @@ export default function CustomerForm({customer,}: {customer?: Customer}) {
             />
         </div>
         <div>
-            <label className="block mb-2">Created On</label>
-            <input className="border p-2 w-full" type="date"
-                        value={dateCreated}
-                        onChange={(e) => setDateCreated(e.target.value)}
-            />
-        </div> 
-        <div>
             <label className="block mb-2">Notes</label>
             <textarea className="border p-2 w-full"
                 value={notes}
@@ -144,14 +114,27 @@ export default function CustomerForm({customer,}: {customer?: Customer}) {
             />
         </div>
       </div>
-      {isNew && (<button className="bg-green-600 text-white px-4 py-2 rounded-full" type="button"
-              onClick={handleAddCustomer}>
-        Add Customer
-      </button>)}
-      {isEdit && (<button className="bg-green-600 text-white px-4 py-2 rounded-full" type="button"
-              onClick={handleUpdateCustomer}>
-        Update Customer
-      </button>)}
+      <div className="pt-4">
+          {mode === "create" && (
+            <button
+              type="button"
+              onClick={handleCreateCustomer}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Create Customer
+            </button>
+          )}
+
+          {mode === "edit" && (
+            <button
+              type="button"
+              onClick={handleUpdateCustomer}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Update Customer
+            </button>
+          )}
+        </div>
     </div>
   );
 }

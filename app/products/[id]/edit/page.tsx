@@ -1,7 +1,7 @@
 import pool from "@/lib/db";
-import CustomerForm from "@/components/customer_form";
+import ProductForm from "@/components/product_form";
 
-export default async function EditCustomerPage({
+export default async function EditproductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -11,27 +11,27 @@ export default async function EditCustomerPage({
   const [rows]: any = await pool.query(
     `
     SELECT *
-    FROM customers
+    FROM products
     WHERE id = ?
     `,
     [id]
   );
 
-  const customer = rows[0];
+  const product = rows[0];
 
-  console.log(customer);
+  console.log(product);
 
-  if (!customer) {
-    return <div>Customer not found</div>;
+  if (!product) {
+    return <div>product not found</div>;
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">
-        Edit Customer
+        Edit product
       </h1>
 
-      <CustomerForm mode="edit" customer={customer}/>
+      <ProductForm mode={"edit"} product={product}/>
     </div>
   );
 }

@@ -4,13 +4,7 @@ import { useState, useEffect } from "react";
 import { custom } from "zod";
 import { Product } from "@/types/product";
 import { Customer } from "@/types/customer";
-
-type Item = {
-  productId?: number;
-  quantity: number;
-  description: string;
-  rate: number;
-};
+import { InvoiceItem } from "@/types/invoice";
 
 export default function InvoiceForm() {
 
@@ -26,11 +20,17 @@ export default function InvoiceForm() {
 
   const [terms, setTerms] = useState("Due on receipt");
 
-  const [items, setItems] = useState<Item[]>([
+  const [items, setItems] = useState<InvoiceItem[]>([
     {
       quantity: 1,
-      description: "",
-      rate: 0,
+      product_name: "",
+      product_price: 0,
+      subtotal: 0,
+      invoice_id: 0,
+      product_id: 0,
+      vat_rate: 0,
+      vat_total: 0,
+      total: 0
     },
   ]);
 
@@ -39,15 +39,21 @@ export default function InvoiceForm() {
       ...items,
       {
         quantity: 1,
-        description: "",
-        rate: 0,
+        product_name: "",
+        product_price: 0,
+        subtotal: 0,
+        invoice_id: 0,
+        product_id: 0,
+        vat_rate: 0,
+        vat_total: 0,
+        total: 0
       },
     ]);
   };
 
   const updateItem = (
     index: number,
-    field: keyof Item,
+    field: keyof InvoiceItem,
     value: string | number
   ) => {
     const updated = [...items];
@@ -61,7 +67,7 @@ export default function InvoiceForm() {
   };
 
   const subtotal = items.reduce(
-    (sum, item) => sum + item.quantity * item.rate,
+    (sum, item) => sum + item.quantity * item.product_price,
     0
   );
 
@@ -73,15 +79,17 @@ export default function InvoiceForm() {
         (p) => p.id === productId
     );
 
+    console.log("Selected product:", product);
+
     if (!product) return;
 
     const updated = [...items];
 
     updated[index] = {
         ...updated[index],
-        productId: product.id,
-        description: product.name,
-        rate: Number(product.price),
+        id: product.id,
+        product_name: product.name,
+        product_price: Number(product.price),
     };
     setItems(updated);
   };
@@ -99,7 +107,10 @@ export default function InvoiceForm() {
         items,
     };
 
-    console.log(invoiceData);
+    console.log(
+      "Invoice payload:",
+      JSON.stringify(invoiceData, null, 2)
+    );
 
     const response = await fetch(
         "/api/invoices/create",
@@ -235,8 +246,8 @@ export default function InvoiceForm() {
         <thead>
           <tr>
             <th className="border p-2">Qty</th>
-            <th className="border p-2">Description</th>
-            <th className="border p-2">Rate</th>
+            <th className="border p-2">Name</th>
+            <th className="border p-2">Price</th>
             <th className="border p-2">Amount</th>
             <th className="border p-2">Actions</th>
           </tr>
@@ -259,7 +270,7 @@ export default function InvoiceForm() {
 
               <td className="border p-2">
                 <select
-                    value={item.productId || ""}
+                    value={item.product_id || ""}
                     onChange={(e) =>
                         handleProductChange(
                         index,
@@ -283,11 +294,11 @@ export default function InvoiceForm() {
               </td>
 
               <td className="border p-2">
-                {(item.rate).toFixed(2)}
+                {(item.product_price).toFixed(2)}
               </td>
 
               <td className="border p-2">
-                {(item.quantity * item.rate).toFixed(2)}
+                {(item.quantity * item.product_price).toFixed(2)}
               </td>
 
               <td className="border p-2">

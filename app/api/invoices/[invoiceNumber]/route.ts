@@ -3,19 +3,25 @@ import pool from "@/lib/db";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ invoiceNumber: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { invoiceNumber } = await params;
 
     const [invoiceRows] = await pool.query(
       `
       SELECT *
       FROM invoices
-      WHERE id = ?
+      WHERE invoice_number = ?
       `,
-      [id]
+      [invoiceNumber]
     );
+
+    const invoice = (invoiceRows as any[])[0];
+
+    if (!invoice) {
+      return;
+    }
 
     const [itemRows] = await pool.query(
       `
@@ -23,7 +29,7 @@ export async function GET(
       FROM invoice_items
       WHERE invoice_id = ?
       `,
-      [id]
+      [invoice.id]
     );
 
     return NextResponse.json({

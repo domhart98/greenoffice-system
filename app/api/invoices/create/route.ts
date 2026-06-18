@@ -10,6 +10,8 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    console.log("Body" + body.items);
+
     const [result] = await connection.query(
       `
       INSERT INTO invoices (
@@ -47,19 +49,23 @@ export async function POST(req: Request) {
             invoice_id,
             product_id,
             quantity,
-            description,
-            rate,
-            amount
+            product_name,
+            product_price,
+            subtotal,
+            vat_total,
+            total
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
                 invoiceId,
-                item.productId || null,
+                item.product_id || null,
                 item.quantity,
-                item.description,
-                item.rate,
-                item.quantity * item.rate,
+                item.product_name,
+                item.product_price,
+                item.quantity * item.product_price, 
+                (item.quantity * item.product_price) * (175/1000),
+                (item.quantity * item.product_price) + ((item.quantity * item.product_price) * (175/1000))
             ]
         );
     }

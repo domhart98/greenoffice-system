@@ -3,35 +3,34 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-export default function CustomersPage() {
-
-  const [customers, setCustomers] = useState([]);
+export default function ProductsPage() {
+  const [products, setproducts] = useState([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchProducts = async () => {
         const response = await fetch(
-            `/api/customers?search=${encodeURIComponent(search)}`
+            `/api/products?search=${encodeURIComponent(search)}`
         );
 
         const data = await response.json();
 
-        setCustomers(data);
+        setproducts(data);
     };
 
-    fetchCustomers();
+    fetchProducts();
   }, [search]);
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">
-        Customers
+        product
       </h1>
     
       <div className="mb-4">
         <input className="w-1/3 border rounded p-2"
             type="text"
-            placeholder="Search customers name..."
+            placeholder="Search product name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
         />
@@ -41,43 +40,44 @@ export default function CustomersPage() {
         <thead>
           <tr>
             <th>ID</th>
+            <th>SKU</th>
             <th>Name</th>
-            <th>Address</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Notes</th>
-            <th>Created At</th>
+            <th>Price</th>
+            <th>VAT Rate</th>
+            <th>Is Active</th>
+            <th>Created On</th>
+            <th>Actions</th>
           </tr>
         </thead>
 
         <tbody>
-          {customers.map((customer: any) => (
-            <tr className="text-center" key={customer.id}>
+          {products.map((product: any) => (
+            <tr className="text-center" key={product.id}>
               <td>
-                <Link className="text-blue-600 underline" href={`/customers/${customer.id}`}>
-                    {customer.id}
+                <Link className="text-blue-600 underline" href={`/products/${product.id}`}>
+                    {product.id}
                 </Link>
               </td>
-              <td>{customer.name}</td>
-              <td>{customer.address}</td>
-              <td>{customer.phone}</td>
-              <td>{customer.email}</td>
-              <td>{customer.notes}</td>
-              <td>{customer.created_at}</td>
+              <td>{product.sku}</td>
+              <td>{product.name}</td>
+              <td>{product.price}</td>
+              <td>{product.vat_rate}</td>
+              <td>{product.is_active}</td>
+              <td>{product.created_at}</td>
               <td>
-                <a className="text-blue-600" href={`/customers/${customer.id}`}>
+                <a className="text-blue-600" href={`/products/${product.id}`}>
                     View
                 </a>
                 <button className="text-red-600"
                   onClick={async () => {
                     const confirmed = confirm(
-                      "Delete this customer?"
+                      "Delete this products?"
                     );
 
                     if (!confirmed) return;
 
                     const response = await fetch(
-                      `/api/customers/${customer.id}`,
+                      `/api/products/${product.id}`,
                       {
                         method: "DELETE",
                       }
@@ -94,7 +94,7 @@ export default function CustomersPage() {
                 >
                   Delete
                 </button>
-                <a className="text-blue-600" href={`/customers/${customer.id}/edit`}>
+                <a className="text-blue-600" href={`/products/${product.id}/edit`}>
                     Edit
                 </a>
               </td>
@@ -103,7 +103,7 @@ export default function CustomersPage() {
         </tbody>
       </table>
 
-      <a className="bg-green-300 rounded-full p-2 mt-8" href="/customers/new">Add New Customer</a>
+      <a className="bg-green-300 rounded-full p-2 mt-8" href="/products/new">Add New products</a>
     </div>
   );
 }
