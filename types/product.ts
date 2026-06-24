@@ -5,4 +5,5 @@ export type Product = {
   price: number;
   vat_rate: number;
   is_active: boolean;
+  stock_quantity: number;
 };

@@ -9,7 +9,7 @@ export default function NewInvoicePage() {
         Create Invoice
       </h1>
 
-      <InvoiceForm />
+      <InvoiceForm mode="create"/>
     </main>
   );
 }

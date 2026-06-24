@@ -22,6 +22,7 @@ export default function ProductForm({
   const [isActive, setIsActive] = useState(
     product?.is_active ?? true
   );
+  const [stockQuantity, setStockQuantity] = useState(product?.stock_quantity ?? 0)
 
   async function handleCreateProduct() {
     const response = await fetch(
@@ -37,6 +38,7 @@ export default function ProductForm({
           price,
           vat_rate: vatRate,
           is_active: isActive,
+          stock_quantity: stockQuantity,
         }),
       }
     );
@@ -62,6 +64,7 @@ export default function ProductForm({
           price,
           vat_rate: vatRate,
           is_active: isActive,
+          stock_quantity: stockQuantity,
         }),
       }
     );
@@ -115,6 +118,24 @@ export default function ProductForm({
             className="w-full border rounded p-2"
           />
         </div>
+
+        <div>
+          <label className="block mb-2">
+              Stock Quantity
+          </label>
+
+          <input
+              className="border p-2 w-full"
+              type="number"
+              min="0"
+              value={stockQuantity}
+              onChange={(e) =>
+                  setStockQuantity(
+                      Number(e.target.value)
+                  )
+              }
+          />
+      </div>
 
         <div>
           <label className="block mb-1 font-medium">

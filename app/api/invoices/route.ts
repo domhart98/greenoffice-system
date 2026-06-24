@@ -1,58 +1,55 @@
-import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  try {
-    const search =
-      req.nextUrl.searchParams.get("search") || "";
+  const searchParams = req.nextUrl.searchParams;
 
-    let query = `
-      SELECT
-        id,
-        invoice_number,
-        customer_name,
-        invoice_date,
-        total
-      FROM invoices
-    `;
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "";
+  const sort = searchParams.get("sort") || "newest";
 
-    const values: any[] = [];
+  let query = `
+    SELECT *
+    FROM invoices
+    WHERE 1 = 1
+  `;
 
-    if (search.trim()) {
-      query += `
-        WHERE
-          CAST(invoice_number AS CHAR) LIKE ?
-          OR customer_name LIKE ?
-      `;
+  const values: any[] = [];
 
-      values.push(
-        `%${search}%`,
-        `%${search}%`
-      );
-    }
-
+  if (search) {
     query += `
-      ORDER BY invoice_number DESC
+      AND (
+        customer_name LIKE ?
+        OR invoice_number LIKE ?
+      )
     `;
 
-    const [rows] = await pool.query(
-      query,
-      values
-    );
-
-    return NextResponse.json(rows);
-
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch invoices",
-      },
-      {
-        status: 500,
-      }
-    );
+    values.push(`%${search}%`);
+    values.push(`%${search}%`);
   }
+
+  if (status && status !== "ALL") {
+    query += ` AND status = ?`;
+    values.push(status);
+  }
+
+  if (sort === "newest") {
+    query += " ORDER BY created_at DESC";
+  }
+
+  if (sort === "oldest") {
+    query += " ORDER BY created_at ASC";
+  }
+
+  if (sort === "highest") {
+    query += " ORDER BY total DESC";
+  }
+
+  if (sort === "lowest") {
+    query += " ORDER BY total ASC";
+  }
+
+  const [rows] = await pool.query(query, values);
+
+  return NextResponse.json(rows);
 }

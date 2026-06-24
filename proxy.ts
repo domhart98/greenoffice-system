@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(
+export function proxy(
   request: NextRequest
 ) {
   const token =
@@ -19,6 +19,6 @@ export const config = {
   matcher: [
     "/customers/:path*",
     "/products/:path*",
-    "/invoices",
+    "/invoices/:path*",
   ],
 };

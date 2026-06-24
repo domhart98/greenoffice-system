@@ -15,14 +15,16 @@ export async function POST(req: Request) {
       INSERT INTO products (
         sku,
         name,
-        price
+        price,
+        stock_quantity,
       )
-      VALUES (?, ?, ?)
+      VALUES (?, ?, ?, ?)
       `,
       [
         body.sku,
         body.name,
         body.price,
+        body.stock_quantity,
       ]
     );
 

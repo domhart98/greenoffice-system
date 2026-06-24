@@ -44,13 +44,15 @@ export async function PUT(
       SET
         sku = ?,
         name = ?,
-        price = ?
+        price = ?,
+        stock_quantity = ?
       WHERE id = ?
       `,
       [
         body.sku,
         body.name,
         body.price,
+        body.stock_quantity,
         id
       ]
     )

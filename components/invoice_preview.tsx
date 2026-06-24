@@ -1,6 +1,7 @@
 import { InvoiceData } from "@/types/invoice";
 import Image from "next/image";
 import PrintButton from "./print_button";
+import UpdateStatusBtn from "./update_status_btn";
 
 type Props = {
   invoice: InvoiceData;
@@ -29,13 +30,22 @@ export default function InvoicePreview({ invoice }: Props) {
           </p>
 
           <p>
-            <strong>Date:</strong>{" "}
+            <strong>Created Date:</strong>{" "}
             {new Date(invoice.invoice_date).toLocaleDateString()}
+          </p>
+
+          <p>
+            <strong>Due Date:</strong>{" "}
+            {new Date(invoice.due_date).toLocaleDateString()}
           </p>
 
           <p>
             <strong>Terms:</strong>{" "}
             {invoice.terms}
+          </p>
+          <p>
+            <strong>Status:</strong>{" "}
+            {invoice.status}
           </p>
         </div>
       </div>
@@ -127,6 +137,7 @@ export default function InvoicePreview({ invoice }: Props) {
       >
         Download PDF
       </a>
+      <UpdateStatusBtn status='SENT' invoice_number={invoice.invoice_number}/>
     </div>
   );
 }

@@ -4,17 +4,15 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 
-export async function getCurrentUser() {
+export function getUserFromRequest() {
+
+  const token = null; //cookies.get("auth_token")?.value;
+
+  if (!token) {
+    return null;
+  }
+
   try {
-    const cookieStore = await cookies();
-
-    const token =
-      cookieStore.get("auth_token")?.value;
-
-    if (!token) {
-      return null;
-    }
-
     return jwt.verify(
       token,
       process.env.JWT_SECRET!
@@ -25,7 +23,7 @@ export async function getCurrentUser() {
 }
 
 export async function requireAuth() {
-  const user = await getCurrentUser();
+  const user = getUserFromRequest();
 
   if (!user) {
     redirect("/login");

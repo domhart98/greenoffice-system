@@ -17,6 +17,7 @@ export type InvoiceData = {
   customer_name: string;
   customer_address: string;
   invoice_date: string;
+  due_date: string;
   terms: string;
   items: InvoiceItem[];
   subtotal: number;
@@ -25,4 +26,5 @@ export type InvoiceData = {
   customer_id: number;
   customer_phone: string;
   customer_email: string;
+  status: string;
 };

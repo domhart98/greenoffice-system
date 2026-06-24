@@ -1,52 +1,60 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { custom } from "zod";
 import { Product } from "@/types/product";
 import { Customer } from "@/types/customer";
-import { InvoiceItem } from "@/types/invoice";
+import { InvoiceData, InvoiceItem } from "@/types/invoice";
 
-export default function InvoiceForm() {
+interface InvoiceFormProps {
+  mode: "create" | "edit";
+  invoice?: InvoiceData;
+}
 
+export default function InvoiceForm({
+  mode,
+  invoice,
+}: InvoiceFormProps) {
+  const router = useRouter();
+  const [newStatus, setNewStatus] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerId, setCustomerId] = useState<number | null>(null);
-  const [invoiceNumber, setInvoiceNumber] = useState<number>();  
+  const [customerId, setCustomerId] = useState(0);
+  const [invoiceNumber, setInvoiceNumber] = useState(invoice?.invoice_number ?? 0);
+  const [nextInvoiceNumber, setNextInvoiceNumber] = useState<number>(0);
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState(invoice?.invoice_date ?? new Date().toISOString().split("T")[0]);
+  const [dueDate, setDueDate] = useState(invoice?.due_date ?? new Date().toISOString().split("T")[0]);
   const [terms, setTerms] = useState("Due on receipt");
 
-  const [items, setItems] = useState<InvoiceItem[]>([
-    {
-      quantity: 1,
-      product_name: "",
-      product_price: 0,
-      subtotal: 0,
-      invoice_id: 0,
-      product_id: 0,
-      vat_rate: 0,
-      vat_total: 0,
-      total: 0
-    },
-  ]);
+  const [items, setItems] = useState<any[]>(
+    mode === "edit" && invoice
+      ? invoice.items : [
+        {
+          id: 0,
+          quantity: 1,
+          product_id: 0,
+          product_name: "",
+          product_price: 0,
+          stock_quantity: 0,
+        },
+      ]
+  );
 
   const addItem = () => {
     setItems([
       ...items,
       {
+        id: 0,
         quantity: 1,
+        product_id: 0,
         product_name: "",
         product_price: 0,
-        subtotal: 0,
-        invoice_id: 0,
-        product_id: 0,
-        vat_rate: 0,
-        vat_total: 0,
-        total: 0
+        stock_quantity: 0,
       },
     ]);
   };
@@ -58,9 +66,25 @@ export default function InvoiceForm() {
   ) => {
     const updated = [...items];
 
+    const product = products.find(
+      (p) => p.id === updated[index].product_id
+    );
+
+    if (
+      field === "quantity" &&
+      product &&
+      Number(value) > product.stock_quantity
+    ) {
+      alert(
+        `Only ${product.stock_quantity} units available`
+      );
+
+      return;
+    }
+
     updated[index] = {
       ...updated[index],
-      [field]: value,
+      [field]: field === "quantity" ? Number(value) : value,
     };
 
     setItems(updated);
@@ -71,15 +95,10 @@ export default function InvoiceForm() {
     0
   );
 
-  const handleProductChange = (
-    index: number,
-    productId: number
-    ) => {
+  const handleProductChange = (index: number, productId: number) => {
     const product = products.find(
         (p) => p.id === productId
     );
-
-    console.log("Selected product:", product);
 
     if (!product) return;
 
@@ -88,22 +107,25 @@ export default function InvoiceForm() {
     updated[index] = {
         ...updated[index],
         id: product.id,
+        product_id: product.id,
         product_name: product.name,
         product_price: Number(product.price),
+        stock_quantity: product.stock_quantity,
     };
     setItems(updated);
   };
 
   const handleGenerateInvoice = async () => {
     const invoiceData = {
-        invoiceNumber,
-        customerName,
-        customerAddress,
-        invoiceDate,
-        terms,
-        subtotal,
-        vat,
-        total,
+        invoice_number: invoiceNumber,
+        customer_name: customerName,
+        customer_address: customerAddress,
+        invoice_date: invoiceDate,
+        due_date: dueDate,
+        terms: terms,
+        customer_id: customerId,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
         items,
     };
 
@@ -134,13 +156,41 @@ export default function InvoiceForm() {
     }
 
     window.open(
-        `/invoices/${result.invoiceNumber}`,
+        `/invoices/${invoiceData.invoice_number}`,
         "_blank"
     );
   };
 
-  const testSave = async () => {
-    
+  const handleUpdateInvoice = async (newStatus: string) => {
+    const response = await fetch(
+      `/api/invoices/${invoice?.invoice_number}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          invoice_number: invoiceNumber,
+          customer_name: customerName,
+          customer_address: customerAddress,
+          invoice_date: invoiceDate,
+          terms: terms,
+          customer_id: customerId,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+          status: newStatus,
+          items,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    console.log(result);
+
+    if (result.success) {
+      router.push("/invoices");
+    }
   };
 
   const vat = subtotal * 0.175;
@@ -148,13 +198,24 @@ export default function InvoiceForm() {
   const total = subtotal + vat;
 
   useEffect(() => {
-    fetch("/api/invoices/next-number")
+    if (mode === "edit" && invoice) {
+      setCustomerId(invoice.customer_id);
+      setCustomerName(invoice.customer_name);
+      setCustomerAddress(invoice.customer_address);
+      setCustomerPhone(invoice.customer_phone);
+      setCustomerEmail(invoice.customer_email);
+    }
+  }, [mode, invoice]);
+
+  useEffect(() => {
+    if (mode === "create") {
+      fetch("/api/invoices/next-number")
         .then((res) => res.json())
         .then((data) => {
-        setInvoiceNumber(data.invoiceNumber);
+          setInvoiceNumber(data.invoiceNumber);
         });
-    }, 
-  []);
+    }
+  }, [mode]);
 
   useEffect(() => {
     fetch("/api/products")
@@ -174,13 +235,17 @@ export default function InvoiceForm() {
     }, 
   []);
 
+  const handleShowLog = () => {
+    console.log("Invoice Number: ",invoiceNumber,"\nMode: ",mode,"\nInvoice Data: ",invoice);
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
         <div>
             <label className="block mb-2">Invoice #</label>
             <input className="border p-2 w-full bg-gray-100"
-                   value={invoiceNumber ?? ""}
+                   value={invoiceNumber}
                    disabled={true}
             />
         </div>
@@ -194,6 +259,21 @@ export default function InvoiceForm() {
         </div>
 
         <div>
+          <label className="block mb-1">
+            Due Date
+          </label>
+
+          <input
+            type="date"
+            className="border rounded p-2 w-full"
+            value={dueDate}
+            onChange={(e) =>
+              setDueDate(e.target.value)
+            }
+          />
+        </div>
+
+        <div>
             <label className="block mb-2">Terms</label>
             <input className="border p-2 w-full"
                    value={terms}
@@ -204,16 +284,23 @@ export default function InvoiceForm() {
           <label className="block mb-1">
             Customer
           </label>
-          <select 
+          <select value={customerId ?? ""}
             onChange={(e) => {
               const customer = customers.find(
                 (c) => c.id === Number(e.target.value)
               );
 
+              
+
               if(!customer) return;
 
+              setCustomerId(customer.id);
               setCustomerName(customer.name);
-              setCustomerAddress(customer.address)
+              setCustomerAddress(customer.address);
+              setCustomerPhone(customer.phone);
+              setCustomerEmail(customer.email);
+
+              console.log(customer.id);
             }}
           >
             <option value="">
@@ -225,7 +312,7 @@ export default function InvoiceForm() {
                   {customer.name}
                 </option>
             ))}
-        </select>
+          </select>
         <div>
         <label className="block mb-2">Customer Name</label>
         <input className="border p-2 w-full" type="text"
@@ -247,6 +334,7 @@ export default function InvoiceForm() {
           <tr>
             <th className="border p-2">Qty</th>
             <th className="border p-2">Name</th>
+            <th className="border p-2">Stock</th>
             <th className="border p-2">Price</th>
             <th className="border p-2">Amount</th>
             <th className="border p-2">Actions</th>
@@ -284,17 +372,22 @@ export default function InvoiceForm() {
 
                     {products.map((product) => (
                         <option
-                        key={product.id}
-                        value={product.id}
+                          key={product.id}
+                          value={product.id}
+                          disabled={product.stock_quantity <= 0}
                         >
-                        {product.name}
+                          {product.name}
                         </option>
                     ))}
                 </select>
               </td>
 
               <td className="border p-2">
-                {(item.product_price).toFixed(2)}
+                {(item.stock_quantity)}
+              </td>
+
+              <td className="border p-2">
+                {(item.product_price)}
               </td>
 
               <td className="border p-2">
@@ -341,10 +434,17 @@ export default function InvoiceForm() {
               onClick={handleGenerateInvoice}>
         Generate Invoice
       </button>
-      <button className="bg-blue-600 text-white px-4 py-2" type="button"
-              onClick={handleGenerateInvoice}
-      >
-        Test Save
+      <button className="bg-green-600 text-white px-4 py-2 rounded-full" type="button"
+              onClick={() => handleUpdateInvoice("SENT")}>
+        Change Status to Sent
+      </button>
+      <button className="bg-green-600 text-white px-4 py-2 rounded-full" type="button"
+              onClick={() => handleUpdateInvoice("DRAFT")}>
+        Change Status to Draft
+      </button>
+      <button className="bg-green-600 text-white px-4 py-2 rounded-full" type="button"
+              onClick={handleShowLog}>
+        Show Log
       </button>
     </div>
   );

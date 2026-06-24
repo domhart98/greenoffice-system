@@ -44,7 +44,7 @@ export default function ProductsPage() {
             <th>Name</th>
             <th>Price</th>
             <th>VAT Rate</th>
-            <th>Is Active</th>
+            <th>Stock</th>
             <th>Created On</th>
             <th>Actions</th>
           </tr>
@@ -60,10 +60,21 @@ export default function ProductsPage() {
               </td>
               <td>{product.sku}</td>
               <td>{product.name}</td>
-              <td>{product.price}</td>
+              <td>${product.price}</td>
               <td>{product.vat_rate}</td>
-              <td>{product.is_active}</td>
-              <td>{product.created_at}</td>
+              <td>
+                <span className={
+                      product.stock_quantity <= 10
+                      ? "text-red-600 font-bold"
+                      : product.stock_quantity <= 25
+                      ? "text-yellow-600 font-semibold"
+                      : "text-green-600"
+                  }
+                >
+                  {product.stock_quantity}
+                </span>
+              </td>
+              <td>{new Date(product.created_at).toLocaleDateString()}</td>
               <td>
                 <a className="text-blue-600" href={`/products/${product.id}`}>
                     View
@@ -71,7 +82,7 @@ export default function ProductsPage() {
                 <button className="text-red-600"
                   onClick={async () => {
                     const confirmed = confirm(
-                      "Delete this products?"
+                      "Delete this product?"
                     );
 
                     if (!confirmed) return;
