@@ -31,3 +31,9 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.smooth-scale-110{
+  transition: transform 0.3s ease-in-out;
+}
+.smooth-scale-110:hover{
+  transform: scale(1.1);
+}

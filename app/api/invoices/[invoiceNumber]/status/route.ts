@@ -110,6 +110,21 @@ export async function PATCH(
             item.product_id
           ]
         );
+
+        await pool.query(`
+            INSERT INTO stock_movements (
+                product_id,
+                movement_type,
+                quantity,
+                reference_number
+            )
+            VALUES (?, 'SALE', ?, ?)
+        `,
+        [
+            item.product_id,
+            item.quantity,
+            invoiceNumber
+        ]);
       }
     }
   }

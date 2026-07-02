@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,9 +28,10 @@ export default function LoginPage() {
     const result = await response.json();
 
     if (result.success) {
+      toast.success(result.success);
       router.push("/");
     } else {
-      alert(result.error);
+      toast.error(result.error)
     }
   }
 

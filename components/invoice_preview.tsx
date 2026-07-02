@@ -1,7 +1,7 @@
 import { InvoiceData } from "@/types/invoice";
 import Image from "next/image";
-import PrintButton from "./print_button";
-import UpdateStatusBtn from "./update_status_btn";
+import PrintButton from "./buttons/print_button";
+import UpdateStatusBtn from "./buttons/update_status_btn";
 
 type Props = {
   invoice: InvoiceData;

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import pool from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
   req: Request,
@@ -34,6 +35,20 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const currentUser = await requireAuth();
+
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to update customers."
+      },
+      {
+        status: 403,
+      }
+    )
+  }
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -78,6 +93,21 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const currentUser = await requireAuth();
+
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to delete customers."
+      },
+      {
+        status: 403,
+      }
+    )
+  }
+
+
   const { id } = await params;
   const [rows]: any = await pool.query(
     `

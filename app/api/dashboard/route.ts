@@ -106,16 +106,6 @@ export async function GET() {
       GROUP BY status
     `);
 
-    const [lowStockProducts] = await connection.query(`
-      SELECT
-        id,
-        name,
-        stock_quantity
-      FROM products
-      WHERE stock_quantity <= 10
-      ORDER BY stock_quantity ASC
-    `);
-
     const revenueByStatusFormatted = (revenueByStatus as any[]).map(
       (row) => ({
         ...row,
@@ -153,12 +143,39 @@ export async function GET() {
         WHERE YEAR(invoice_date) = YEAR(CURDATE())
     `);
 
+    const [lowStockCount]: any = await connection.query(`
+        SELECT COUNT(*) AS total
+        FROM products
+        WHERE stock_quantity <= 5
+        AND stock_quantity > 0
+    `);
+
+    const [outOfStockCount]: any = await connection.query(`
+        SELECT COUNT(*) AS total
+        FROM products
+        WHERE stock_quantity = 0
+    `);
+
+    const [lowStockProducts] = await connection.query(`
+        SELECT
+            id,
+            sku,
+            name,
+            stock_quantity
+        FROM products
+        WHERE stock_quantity <= 5
+        ORDER BY stock_quantity ASC
+        LIMIT 10
+    `);
+
     return Response.json({
       accountsReceivable: accountsReceivable[0].total,
       customerBalances: customerBalances,
       outstandingInvoices: outstandingInvoices,
       overdueInvoices: overdueInvoices[0].total,
       overdueAmount: overdueAmount[0].total,
+      lowStockCount: lowStockCount[0].total,
+      outOfStockCount: outOfStockCount[0].total,
 
       customerCount: customerRows[0].total,
       productCount: productRows[0].total,

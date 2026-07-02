@@ -3,31 +3,45 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
+import pool from "./db";
 
-export function getUserFromRequest() {
+export async function getCurrentUser() {
+  const token = (await cookies()).get("auth_token");
 
-  const token = null; //cookies.get("auth_token")?.value;
+  if (!token) return null;
 
-  if (!token) {
-    return null;
-  }
+  const decoded = jwt.verify(
+    token.value,
+    process.env.JWT_SECRET!
+  ) as any;
 
-  try {
-    return jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    );
-  } catch {
-    return null;
-  }
+  const [rows]: any = await pool.query(
+    `
+    SELECT
+      id,
+      username,
+      role
+    FROM users
+    WHERE id = ?
+    `,
+    [decoded.userId]
+  );
+
+  return rows[0];
 }
 
 export async function requireAuth() {
-  const user = getUserFromRequest();
+  const currentUser = await getCurrentUser();
 
-  if (!user) {
+  console.log(currentUser);
+
+  if (!currentUser) {
     redirect("/login");
   }
 
-  return user;
+  return currentUser;
+}
+
+export async function signup(formData: FormData) {
+  
 }

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import pool from "@/lib/db";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
   req: Request,
@@ -34,6 +35,20 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const currentUser = await requireAuth();
+  
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to update products."
+      },
+      {
+        status: 403,
+      }
+    )
+  }
+  
   try {
     const { id } = await params;
     const body = await req.json();
@@ -76,24 +91,21 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const [rows]: any = await pool.query(
-    `
-    SELECT COUNT(*) AS total
-    FROM invoices
-    WHERE product_id = ?
-    `,
-    [id]
-  )
-
-  if (rows[0].total > 0){
-    return NextResponse.json({
-        error: "Cannot Delete, product has invoices",
-    },
-    {
-      status: 400,
-    });
+  const currentUser = await requireAuth();
+  
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to delete products."
+      },
+      {
+        status: 403,
+      }
+    )
   }
+
+  const { id } = await params;
   
   await pool.query(
     `

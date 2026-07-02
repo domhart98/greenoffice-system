@@ -200,6 +200,15 @@ export default function Dashboard(){
                     title="Overdue Amount"
                     value={`$${data.overdueAmount}`}
                 />
+                <KpiCard
+                    title="Low Stock"
+                    value={data.lowStockCount}
+                />
+
+                <KpiCard
+                    title="Out of Stock"
+                    value={data.outOfStockCount}
+                />
             </div>
             
             <div className="bg-white rounded-xl shadow p-6">

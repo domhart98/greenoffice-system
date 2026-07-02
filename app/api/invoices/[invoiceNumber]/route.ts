@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { InvoiceItem } from "@/types/invoice";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
   req: Request,
@@ -51,6 +52,20 @@ export async function PUT(
   req: NextResponse,
   { params }: {params: Promise<{invoiceNumber: string}>}
 ) {
+  const currentUser = await requireAuth();
+
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to update invoices."
+      },
+      {
+        status: 403,
+      }
+    )
+  }
+
   try{
     const {invoiceNumber} = await params;
     const body = await req.json();
@@ -165,6 +180,20 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ invoiceNumber: string }> }
 ) {
+  const currentUser = await requireAuth();
+
+  if (currentUser.role !== "ADMIN") {
+    return Response.json(
+      {
+        success: false,
+        error: "Current user not authorized to delete invoices."
+      },
+      {
+        status: 403,
+      }
+    )
+  }
+
   try{
     const { invoiceNumber } = await params;
     
