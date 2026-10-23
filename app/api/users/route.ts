@@ -1,53 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { requireApiAuth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  try{
+  const auth = await requireApiAuth();
+
+  if (auth.response) {
+    return auth.response;
+  }
+
+  const currentUser = auth.user;
+
+  try {
     const search =
-      req.nextUrl.searchParams.get("search") || "";
+      req.nextUrl.searchParams.get("search")?.trim() || "";
 
     let query = `
-      SELECT id, username, role, created_at
-      FROM users
+      SELECT DISTINCT
+        u.id,
+        u.username,
+        u.role,
+        u.created_at,
+        u.email
+      FROM users u
+      INNER JOIN business_users bu
+        ON bu.user_id = u.id
+      WHERE bu.business_id = ?
     `;
 
-    const values: any[] = [];
+    const values: (string | number)[] = [
+      currentUser.business_id,
+    ];
 
-    if (search.trim()) {
+    if (search) {
       query += `
-        WHERE
-          CAST(id AS CHAR) LIKE ?
-          OR username LIKE ?
+        AND (
+          CAST(u.id AS CHAR) LIKE ?
+          OR u.username LIKE ?
+        )
       `;
 
-      values.push(
-        `%${search}%`,
-        `%${search}%`
-      );
+      values.push(`%${search}%`, `%${search}%`);
     }
 
-    query += `
-      ORDER BY id ASC
-    `;
+    query += ` ORDER BY u.id ASC`;
 
-    const [rows] = await pool.query(
-      query,
-      values
-    );
-  
+    const [rows] = await pool.query(query, values);
+
     return NextResponse.json(rows);
-  
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching business users:", error);
 
     return NextResponse.json(
       {
         success: false,
         error: "Failed to fetch users",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

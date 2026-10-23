@@ -6,9 +6,24 @@ import KpiCard from "@/components/kpi_card";
 import RevenueChart from "./charts/revenue_chart";
 import TopProductsChart from "./charts/top_products_chart";
 import RevenueStatusChart from "./charts/revenue_status_chart";
+import LoadingSpinner from "./loading_spinner";
+import { getCurrentUser } from "@/lib/auth";
+import { User } from "@/types/user";
+import ProfitLossWidget from "./widgets/profit_loss_widget";
+import CashFlowWidget from "./widgets/cashflow_widget";
+import InvoicesWidget from "./widgets/invoices_widget";
+import SalesWidget from "./widgets/sales_widget";
+import ExpensesWidget from "./widgets/expenses_widget";
+import AccountsReceivableWidget from "./widgets/accounts_receivable_widget";
 
-export default function Dashboard(){
+export default function Dashboard({
+    user,
+}: {
+    user: User;
+}) {
     const [data, setData] = useState<any>(null);
+
+    console.log("User: ", user.username);
     
     useEffect(() => {
         fetch("/api/dashboard")
@@ -17,246 +32,133 @@ export default function Dashboard(){
     }, []);
 
     if (!data) {
-        return <div className="p-6">Loading dashboard...</div>;
+        return <LoadingSpinner/>;
     }
 
-    console.log(data);
+    console.log("API Data: ", data);
 
     const { kpis } = data;
     
     return(
-        <div>
-            <h1 className="text-3xl font-bold mb-8">
-                Dashboard
-            </h1>
-            <h1 className="text-3xl font-bold">
-                Welcome back
-            </h1>
-            <p className="text-gray-500">
-                {new Date().toLocaleDateString()}
-            </p>
+      <div>
+        <h1>
+          Welcome back, <span>{user.username}</span>
+        </h1>
+        <p className="mb-8 text-lg text-slate-500">
+          Here's an overview of your business.
+        </p>
 
-            {/* Cards */}
+        {/* Widgets */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 mb-8">
+          <ProfitLossWidget/>
+          <CashFlowWidget/>
+          <InvoicesWidget/>
+          <SalesWidget/>
+          <ExpensesWidget/>
+          <AccountsReceivableWidget/>
+        </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-8">
-
-                <div className="border rounded p-4">
-                <h2>Customers</h2>
-                <p className="text-3xl">
-                    {data.customerCount}
-                </p>
-                </div>
-
-                <div className="border rounded p-4">
-                <h2>Products</h2>
-                <p className="text-3xl">
-                    {data.productCount}
-                </p>
-                </div>
-
-                <div className="border rounded p-4">
-                <h2>Invoices</h2>
-                <p className="text-3xl">
-                    {data.invoiceCount}
-                </p>
-                </div>
-
-            </div>
-
-            {/* Recent Invoices */}
-
-            <h2 className="text-xl font-bold mb-4">
-                Recent Invoices
+        {/* TABLES */}
+         <div className="bg-white rounded-xl shadow p-6 my-8">
+            <h2 className="text-xl font-bold mb-6">
+                Outstanding Invoices
             </h2>
 
-            <table className="w-full border">
+            <table className="w-full border-collapse">
                 <thead>
-                <tr>
-                    <th>Invoice</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Created On</th>
-                </tr>
+                    <tr>
+                        <th>Invoice # </th>
+                        <th>Customer</th>
+                        <th>Due Date</th>
+                        <th>Total</th>
+                    </tr>
                 </thead>
 
                 <tbody>
-                {data.recentInvoices.map((invoice: any) => (
-                    <tr className="text-center" key={invoice.invoice_number}>
-                    <td>
-                        <Link className="text-blue-600 underline" href={`/invoices/${invoice.invoice_number}`}>
-                        {invoice.invoice_number}
-                        </Link>
-                    </td>
-                    <td>{invoice.customer_name}</td>
-                    <td>${invoice.total}</td>
-                    <td>{new Date(invoice.date).toLocaleDateString()}</td>
-                    </tr>
-                ))}
+                    {data.outstandingInvoices.map((invoice: any) => (
+                        <tr
+                            key={invoice.invoice_number}
+                            className="border-b border-slate-200 last:border-b-0"
+                        >
+                            <td className="px-3 py-4 text-center">
+                                <Link
+                                    href={`/invoices/${invoice.invoice_number}`}
+                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                    {invoice.invoice_number}
+                                </Link>
+                            </td>
+
+                            <td className="text-center">
+                                {invoice.customer_name}
+                            </td>
+
+                            <td className="text-center">
+                                {new Date(invoice.due_date).toLocaleDateString()}
+                            </td>
+
+                            <td className="text-center">
+                                ${Number(invoice.total).toFixed(2)}
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
+        </div>
 
-            {/* Total Revenues */}
-            <RevenueChart data={data.revenueByMonth}/>
-            <div className="border rounded p-4">
-                <h2>Revenue This Month</h2>
-                <p className="text-3xl">
-                ${data.monthlyRevenue}
+        <div className="bg-white p-6 rounded-xl shadow my-8">
+            <h2 className="text-xl font-bold mb-6">
+                Low Stock Alerts
+            </h2>
+
+            {data.lowStockProducts.length === 0 ? (
+                <p className="text-green-600">
+                    No low stock alerts.
                 </p>
-            </div>
+            ) : (
+                <ul className="space-y-2">
+                    {data.lowStockProducts.map((product: any) => (
+                        <li
+                            key={product.id}
+                            className="flex justify-between border-b border-slate-200 last:border-b-0"
+                        >
+                            <span>{product.name}</span>
 
-            <div className="border rounded p-4">
-                <h2>Revenue This Year</h2>
-                <p className="text-3xl">
-                ${data.yearlyRevenue}
-                </p>
-            </div>
+                            <span className="text-red-600 font-bold">
+                                {product.stock_quantity} left
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
 
-            {/* Quick Actions */}
-            <div className="border rounded p-6 mb-8">
-                <h2 className="text-xl font-bold mb-4">
-                Quick Actions
-                </h2>
-
-                <div className="flex gap-4">
-                <Link
-                    href="/invoices/new"
-                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                    New Invoice
-                </Link>
-
-                <Link
-                    href="/customers/new"
-                    className="bg-green-600 text-white px-4 py-2 rounded"
-                >
-                    New Customer
-                </Link>
-
-                <Link
-                    href="/products/new"
-                    className="bg-purple-600 text-white px-4 py-2 rounded"
-                >
-                    New Product
-                </Link>
-                </div>
-            </div>
-
-            {/* MAIN GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <div className="bg-white p-4 rounded-xl shadow">
-                    <RevenueStatusChart data={data.revenueByStatus}/>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl shadow">
-                    <TopProductsChart data={data.topProducts}/>
-                </div>
-
-            </div>
-
-            {/* TABLES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow">
-                <h2 className="text-xl font-bold mb-4">
-                    Low Stock Alerts
-                </h2>
-
-                {data.lowStockProducts.length === 0 ? (
-                    <p className="text-green-600">
-                        No low stock alerts.
-                    </p>
-                ) : (
-                    <ul className="space-y-2">
-                        {data.lowStockProducts.map((product: any) => (
-                            <li
-                                key={product.id}
-                                className="flex justify-between border-b pb-2"
-                            >
-                                <span>{product.name}</span>
-
-                                <span className="text-red-600 font-bold">
-                                    {product.stock_quantity} left
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-            <div>
-                <KpiCard
+        {/* KPIs */}
+        <div className="mb-8 grid col-1 gap-4">
+            <KpiCard
                 title="Accounts Receivable"
                 value={`$${data.accountsReceivable}`}
-                />
+            />
 
-                <KpiCard
-                    title="Overdue Invoices"
-                    value={data.overdueInvoices}
-                />
+            <KpiCard
+                title="Overdue Invoices"
+                value={data.overdueInvoices}
+            />
 
-                <KpiCard
-                    title="Overdue Amount"
-                    value={`$${data.overdueAmount}`}
-                />
-                <KpiCard
-                    title="Low Stock"
-                    value={data.lowStockCount}
-                />
+            <KpiCard
+                title="Overdue Amount"
+                value={`$${data.overdueAmount}`}
+            />
+            <KpiCard
+                title="Low Stock"
+                value={data.lowStockCount}
+            />
 
-                <KpiCard
-                    title="Out of Stock"
-                    value={data.outOfStockCount}
-                />
-            </div>
-            
-            <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-xl font-bold mb-4">
-                    Outstanding Invoices
-                </h2>
-
-                <table className="w-full">
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Customer</th>
-                            <th>Due Date</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {data.outstandingInvoices.map((invoice: any) => (
-                            <tr
-                                key={invoice.invoice_number}
-                                className="border-t"
-                            >
-                                <td className="text-center">
-                                    <Link
-                                        href={`/invoices/${invoice.invoice_number}`}
-                                        className="text-blue-600 underline"
-                                    >
-                                        {invoice.invoice_number}
-                                    </Link>
-                                </td>
-
-                                <td className="text-center">
-                                    {invoice.customer_name}
-                                </td>
-
-                                <td className="text-center">
-                                    {new Date(invoice.due_date).toLocaleDateString()}
-                                </td>
-
-                                <td className="text-center">
-                                    ${Number(invoice.total).toFixed(2)}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <KpiCard
+                title="Out of Stock"
+                value={data.outOfStockCount}
+            />
+        </div> 
+    </div>
     )
 }

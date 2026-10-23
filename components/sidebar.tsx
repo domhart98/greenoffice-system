@@ -1,121 +1,332 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import "@/app/globals.css"
+import { useEffect, useState } from "react";
 
-export default function Sidebar({
-  role,
-}: {
+import {
+  LayoutDashboard,
+  Warehouse,
+  Package,
+  ClipboardList,
+  FileText,
+  UsersRound,
+  Receipt,
+  ContactRound,
+  BriefcaseBusiness,
+  HandCoins,
+  CreditCard,
+  UserRoundCog,
+  ChevronDown,
+  ShoppingCart,
+} from "lucide-react";
+
+import "@/app/globals.css";
+
+type SidebarProps = {
   role: string;
-}) {
+};
+
+type NavChild = {
+  label: string;
+  href: string;
+  roles?: string[];
+};
+
+type NavItem = {
+  label: string;
+  href?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: string[];
+  children?: NavChild[];
+};
+
+export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
-  const navItemclassName = (href: string) =>
-    `block px-4 py-2 rounded ${
-      pathname === href
-        ? "bg-blue-600 text-white"
-        : "hover:bg-gray-100"
-    }`;
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  const navItems: NavItem[] = [
+    {
+      label: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+    },
+    {
+      label: "Sales",
+      icon: ShoppingCart,
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+      children: [
+        {
+          label: "Invoices",
+          href: "/invoices",
+          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+        },
+        {
+          label: "Customers",
+          href: "/customers",
+          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+        },
+        {
+          label: "Accounts Receivable",
+          href: "/accounts-receivable",
+          roles: ["ADMIN", "MANAGER"],
+        },
+        {
+          label: "Payments",
+          href: "/payments",
+          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+        },
+      ],
+    },
+    {
+      label: "Inventory",
+      icon: Warehouse,
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+      children: [
+        {
+          label: "Products",
+          href: "/products",
+          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+        },
+        {
+          label: "Purchase Orders",
+          href: "/purchase-orders",
+          roles: ["ADMIN", "MANAGER", "VIEWER"],
+        },
+      ],
+    },
+    {
+      label: "Expenses",
+      icon: Receipt,
+      roles: ["ADMIN", "MANAGER", "VIEWER"],
+      children: [
+        {
+          label: "Expenses",
+          href: "/expenses",
+          roles: ["ADMIN", "MANAGER", "VIEWER"],
+        },
+        {
+          label: "Payees",
+          href: "/payees",
+          roles: ["ADMIN", "MANAGER", "VIEWER"],
+        },
+      ],
+    },
+    {
+      label: "People",
+      icon: UsersRound,
+      roles: ["ADMIN", "MANAGER", "VIEWER"],
+      children: [
+        {
+          label: "Employees",
+          href: "/employees",
+          roles: ["ADMIN", "MANAGER", "VIEWER"],
+        },
+      ],
+    },
+    {
+      label: "Users",
+      href: "/users",
+      icon: UserRoundCog,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Reports",
+      href: "/reports",
+      icon: FileText,
+      roles: ["ADMIN", "VIEWER"],
+    },
+  ];
+
+  const isActive = (href: string) => {
+    return href === "/"
+      ? pathname === "/"
+      : pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const hasActiveChild = (item: NavItem) => {
+    return item.children?.some((child) => isActive(child.href)) ?? false;
+  };
+
+  useEffect(() => {
+    const activeMenus = navItems
+      .filter((item) => hasActiveChild(item))
+      .map((item) => item.label);
+
+    setOpenMenus((current) => [
+      ...new Set([...current, ...activeMenus]),
+    ]);
+  }, [pathname]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus((current) =>
+      current.includes(label)
+        ? current.filter((item) => item !== label)
+        : [...current, label]
+    );
+  };
+
+  const navItemClassName = (href: string) => {
+    const active = isActive(href);
+
+    return `
+      flex items-center
+      rounded-lg
+      px-4 py-2.5
+      text-sm font-medium
+      transition-colors duration-150
+      ${
+        active
+          ? "bg-emerald-50 text-emerald-700"
+          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+      }
+    `;
+  };
 
   return (
-    <aside className="w-64 bg-gray-900 text-white">
-      <div className="p-4 border-b border-gray-800">
-        <div className="flex items-center justify-between my-4">
-          <Image src="https://tailwindflex.com/images/logo.svg" alt="Logo" className="h-8 w-auto" width={40} height={40}/>
-          <span className="text-xl font-bold">Green Office</span>
-        </div>
-      </div>
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
 
-      <div className="p-4">
-        <div className="relative">
-          <input type="text" className="w-full bg-gray-800 text-white rounded-md pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search..."/>
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    
-      <nav className="mt-5 px-2">
-        <div className="space-y-4">
-            <Link href="/" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg bg-gray-800 text-white group transition-all duration-200 hover:bg-gray-700">
-                <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Dashboard
-            </Link >
-            <div className="space-y-1">
-                <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none" aria-expanded="true" aria-controls="analytics-dropdown">
-                    <div className="flex items-center">
-                        <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        Inventory
-                    </div>
-                    <svg className="ml-2 h-5 w-5 transform transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                </button>
-                <div className="space-y-1 pl-11" id="analytics-dropdown">
-                    <Link href="/products" className="group flex items-center px-4 py-2 text-sm text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
-                        Products
-                    </Link >
-                    <Link href="#" className="group flex items-center px-4 py-2 text-sm text-gray-300 rounded-md hover:bg-gray-700 hover:text-white">
-                        Purchase Reports
-                    </Link >
-                </div>
-            </div>
-            <Link href="/invoices" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white group transition-all duration-200">
-                <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                Invoices
-            </Link >
-            <Link href="customers" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white group transition-all duration-200">
-                <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Customers
-            </Link >
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
 
-            <Link href="#" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white group transition-all duration-200">
-                <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Accounts Receivable
-            </Link >
-            {role === "ADMIN" && (
-                <Link href="/users" className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white group transition-all duration-200">
-                    <svg className="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Users
-                </Link >
-            )}
-            <div className="mt-20 p-4">
-                <div className="mb-4 text-sm">
-                    {"Logged in as: "}
-                    <span className="font-semibold">
-                        {role}
+        <div className="space-y-2">
+
+          {navItems
+            .filter(
+              (item) =>
+                !item.roles ||
+                item.roles.includes(role)
+            )
+            .map((item) => {
+              const Icon = item.icon;
+
+              if (!item.children) {
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href!}
+                    className={navItemClassName(item.href!)}
+                  >
+                    <Icon className="mr-3 h-5 w-5 shrink-0" />
+
+                    <span>
+                      {item.label}
                     </span>
-                </div>
-                <button onClick={async () => {
-                    await fetch("/api/logout", {
-                        method: "POST",
-                    });
+                  </Link>
+                );
+              }
 
-                    window.location.href = "/login";
-                }}
-                className="w-full bg-red-600 text-white py-2 rounded smooth-scale-110"
-                >
-                    Logout
-                </button>
-            </div>
+              const isOpen = openMenus.includes(item.label);
+              const activeChild = hasActiveChild(item);
+
+              const visibleChildren = item.children.filter(
+                (child) =>
+                  !child.roles ||
+                  child.roles.includes(role)
+              );
+
+              if (visibleChildren.length === 0) {
+                return null;
+              }
+
+              return (
+                <div key={item.label} className="space-y-1">
+
+                  {/* Parent */}
+                  <button
+                    type="button"
+                    onClick={() => toggleMenu(item.label)}
+                    aria-expanded={isOpen}
+                    className={`
+                      flex w-full items-center justify-between
+                      rounded-lg
+                      px-4 py-2.5
+                      text-sm font-medium
+                      transition-colors duration-150
+                      ${
+                        activeChild
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                      }
+                    `}
+                  >
+                    <span className="flex items-center">
+                      <Icon className="mr-3 h-5 w-5 shrink-0" />
+
+                      {item.label}
+                    </span>
+
+                    <ChevronDown
+                      className={`
+                        h-4 w-4
+                        transition-transform duration-200
+                        ${isOpen ? "rotate-180" : ""}
+                      `}
+                    />
+                  </button>
+
+                  {/* Children */}
+                  {isOpen && (
+                    <div className="ml-5 space-y-1 border-l border-slate-200 pl-4">
+
+                      {visibleChildren.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`
+                            block
+                            rounded-lg
+                            px-3 py-2
+                            text-sm
+                            transition-colors duration-150
+                            ${
+                              isActive(child.href)
+                                ? "bg-emerald-50 font-medium text-emerald-700"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            }
+                          `}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
         </div>
       </nav>
+
+      {/* Bottom user information */}
+      <div className="border-t border-slate-200 p-4">
+
+        <div className="mb-3 text-sm text-slate-600">
+          Logged in as:
+
+          <span className="ml-1 font-semibold text-slate-900">
+            {role}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            await fetch("/api/logout", {
+              method: "POST",
+            });
+
+            window.location.href = "/login";
+          }}
+          className="w-full rounded-lg bg-red-50 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+        >
+          Logout
+        </button>
+
+      </div>
     </aside>
   );
 }

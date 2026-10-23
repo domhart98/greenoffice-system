@@ -1,31 +1,60 @@
 import { NextResponse, NextRequest } from "next/server";
 import pool from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+function isBusinessAdmin(role: string) {
+  return role === "OWNER" || role === "ADMIN";
+}
 
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: RouteContext
 ) {
   try {
-    const { id } = await params;
+    const auth = await requireApiAuth();
 
-    const [customerRows] = await pool.query(
+    if (!auth.user) {
+      return auth.response!;
+    }
+
+    const { id } = await params;
+    const customerId = Number(id);
+
+    if (!Number.isInteger(customerId) || customerId < 1) {
+      return NextResponse.json(
+        { success: false, error: "Invalid customer ID" },
+        { status: 400 }
+      );
+    }
+
+    const [rows]: any = await pool.query(
       `
       SELECT *
       FROM customers
       WHERE id = ?
+        AND business_id = ?
       `,
-      [id]
+      [customerId, auth.user.business_id]
     );
 
-    return NextResponse.json({
-      customer: (customerRows as any[])[0],
-    });
+    if (rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ customer: rows[0] });
   } catch (error) {
-    console.error(error);
+    console.error("Failed to fetch customer:", error);
 
     return NextResponse.json(
-      { error: "Failed to fetch invoice" },
+      { success: false, error: "Failed to fetch customer" },
       { status: 500 }
     );
   }
@@ -33,25 +62,64 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteContext
 ) {
-  const currentUser = await requireAuth();
-
-  if (currentUser.role !== "ADMIN") {
-    return Response.json(
-      {
-        success: false,
-        error: "Current user not authorized to update customers."
-      },
-      {
-        status: 403,
-      }
-    )
-  }
-
   try {
+    const auth = await requireApiAuth();
+
+    if (!auth.user) {
+      return auth.response!;
+    }
+
+    const currentUser = auth.user;
+
+    if (!isBusinessAdmin(currentUser.business_role)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "You are not authorized to update customers.",
+        },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
+    const customerId = Number(id);
+
+    if (!Number.isInteger(customerId) || customerId < 1) {
+      return NextResponse.json(
+        { success: false, error: "Invalid customer ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
+
+    if (!body.name || !String(body.name).trim()) {
+      return NextResponse.json(
+        { success: false, error: "Customer name is required" },
+        { status: 400 }
+      );
+    }
+
+    const [oldRows]: any = await pool.query(
+      `
+      SELECT *
+      FROM customers
+      WHERE id = ?
+        AND business_id = ?
+      `,
+      [customerId, currentUser.business_id]
+    );
+
+    if (oldRows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    const oldCustomer = oldRows[0];
 
     await pool.query(
       `
@@ -61,81 +129,149 @@ export async function PUT(
         address = ?,
         phone = ?,
         email = ?,
-        notes = ?
+        notes = ?,
+        company_name = ?,
+        city = ?,
+        state = ?,
+        country = ?,
+        postal_code = ?,
+        open_balance = ?
       WHERE id = ?
+        AND business_id = ?
       `,
       [
-        body.name,
-        body.address,
-        body.phone,
-        body.email,
-        body.notes,
-        id
+        String(body.name).trim(),
+        body.address ?? null,
+        body.phone ?? null,
+        body.email ?? null,
+        body.notes ?? null,
+        body.company_name ?? null,
+        body.city ?? null,
+        body.state ?? null,
+        body.country ?? null,
+        body.postal_code ?? null,
+        body.open_balance ?? 0,
+        customerId,
+        currentUser.business_id,
       ]
-    )
+    );
+
+    await logAudit({
+      userId: currentUser.id,
+      action: "UPDATE",
+      entityName: "customers",
+      recordId: customerId,
+      oldValues: oldCustomer,
+      newValues: {
+        ...body,
+        business_id: currentUser.business_id,
+      },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(error);
+    console.error("Failed to update customer:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to update customer",
-      },
-      {
-        status: 500,
-      }
+      { success: false, error: "Failed to update customer" },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteContext
 ) {
-  const currentUser = await requireAuth();
+  try {
+    const auth = await requireApiAuth();
 
-  if (currentUser.role !== "ADMIN") {
-    return Response.json(
-      {
-        success: false,
-        error: "Current user not authorized to delete customers."
-      },
-      {
-        status: 403,
-      }
-    )
-  }
+    if (!auth.user) {
+      return auth.response!;
+    }
 
+    const currentUser = auth.user;
 
-  const { id } = await params;
-  const [rows]: any = await pool.query(
-    `
-    SELECT COUNT(*) AS total
-    FROM invoices
-    WHERE customer_id = ?
-    `,
-    [id]
-  )
+    if (!isBusinessAdmin(currentUser.business_role)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "You are not authorized to delete customers.",
+        },
+        { status: 403 }
+      );
+    }
 
-  if (rows[0].total > 0){
-    return NextResponse.json({
-        error: "Cannot Delete, Customer has invoices",
-    },
-    {
-      status: 400,
+    const { id } = await params;
+    const customerId = Number(id);
+
+    if (!Number.isInteger(customerId) || customerId < 1) {
+      return NextResponse.json(
+        { success: false, error: "Invalid customer ID" },
+        { status: 400 }
+      );
+    }
+
+    const [customerRows]: any = await pool.query(
+      `
+      SELECT *
+      FROM customers
+      WHERE id = ?
+        AND business_id = ?
+      `,
+      [customerId, currentUser.business_id]
+    );
+
+    if (customerRows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    const oldCustomer = customerRows[0];
+
+    const [invoiceRows]: any = await pool.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM invoices
+      WHERE customer_id = ?
+        AND business_id = ?
+      `,
+      [customerId, currentUser.business_id]
+    );
+
+    if (Number(invoiceRows[0].total) > 0) {
+      return NextResponse.json(
+        { error: "Cannot delete: customer has invoices" },
+        { status: 400 }
+      );
+    }
+
+    await pool.query(
+      `
+      DELETE FROM customers
+      WHERE id = ?
+        AND business_id = ?
+      `,
+      [customerId, currentUser.business_id]
+    );
+
+    await logAudit({
+      userId: currentUser.id,
+      action: "DELETE",
+      entityName: "customers",
+      recordId: customerId,
+      oldValues: oldCustomer,
     });
-  }
-  
-  await pool.query(
-    `
-    DELETE FROM customers
-    WHERE id = ?
-    `,
-    [id]
-  );
 
-  return NextResponse.json({
-    success: true,
-  });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete customer:", error);
+
+    return NextResponse.json(
+      { success: false, error: "Failed to delete customer" },
+      { status: 500 }
+    );
+  }
 }

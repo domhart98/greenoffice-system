@@ -10,13 +10,24 @@ export default async function EditInvoicePage({
   const { invoiceNumber } = await params;
 
   const [invoiceRows]: any = await pool.query(
-    `
-    SELECT * 
-    FROM invoices
-    WHERE invoice_number = ?
-    `,
-    [invoiceNumber]
-  );
+  `
+  SELECT
+    i.*,
+
+    c.state AS customer_state,
+    c.city AS customer_city,
+    c.country AS customer_country,
+    c.postal_code AS customer_postal_code
+
+  FROM invoices i
+
+  LEFT JOIN customers c
+    ON c.id = i.customer_id
+
+  WHERE i.invoice_number = ?
+  `,
+  [invoiceNumber]
+);
 
   const invoice  = (invoiceRows as any[])[0];
 
@@ -47,9 +58,14 @@ export default async function EditInvoicePage({
 
   const [itemRows] = await pool.query(
     `
-    SELECT *
-    FROM invoice_items
-    WHERE invoice_id = ?
+    SELECT
+      ii.*,
+      p.stock_quantity AS stock_quantity
+    FROM invoice_items ii
+    LEFT JOIN products p
+      ON p.id = ii.product_id
+    WHERE ii.invoice_id = ?
+    ORDER BY ii.line_number ASC
     `,
     [invoice.id]
   );
@@ -59,12 +75,14 @@ export default async function EditInvoicePage({
   console.log("Invoice Data passed from edit page: ",invoice);
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="min-h-screen p-8">
       <h1 className="text-2xl font-bold mb-6">
         Edit Invoice
       </h1>
 
-      <InvoiceForm mode="edit" invoice={invoice}/>
+      <div className="bg-white p-6 rounded-lg border border-slate-200">
+        <InvoiceForm mode="edit" invoice={invoice}/>
+      </div>
     </div>
   );
 }

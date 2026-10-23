@@ -9,7 +9,9 @@ export default function NewInvoicePage() {
         Create Invoice
       </h1>
 
-      <InvoiceForm mode="create"/>
+      <div className="bg-white p-6 rounded-lg border border-slate-200">
+        <InvoiceForm mode="create"/>
+      </div>
     </main>
   );
 }

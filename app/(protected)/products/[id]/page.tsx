@@ -1,4 +1,6 @@
 import pool from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import ProductForm from "@/components/forms/product_form";
 
 export default async function ProductPage({
   params,
@@ -6,6 +8,7 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const currentUser = await getCurrentUser();
 
   const [productRows] = await pool.query(
     `
@@ -27,108 +30,11 @@ export default async function ProductPage({
   }
 
   return (
-    <div className="mt-4 rounded-lg  border bg-white shadow-sm p-4">
-        <h3 className="font-semibold text-lg mb-3">
-        Product Details
-        </h3>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-            <div className="text-gray-500">
-            Name
-            </div>
-
-            <div>
-            {product.name}
-            </div>
-        </div>
-
-        <div>
-            <div className="text-gray-500">
-            SKU
-            </div>
-
-            <div>
-            {product.sku}
-            </div>
-        </div>
-
-        <div className="col-span-2">
-            <div className="text-gray-500">
-            Price
-            </div>
-
-            <div className="whitespace-pre-line">
-            {product.price}
-            </div>
-        </div>
-
-        <div>
-            <div className="text-gray-500">
-            VAT Rate
-            </div>
-
-            <div>
-            {product.vat_rate}
-            </div>
-        </div>
-        <div>
-            <div className="text-gray-500">
-            Is Active
-            </div>
-
-            <div>
-            {product.is_active}
-            </div>
-        </div>
-        <div>
-            <div className="text-gray-500">
-            Created On
-            </div>
-
-            <div>
-              {new Date(product.created_at).toLocaleDateString()}
-            </div>
-        </div>
-      </div>
-      <button
-          className="
-              bg-green-600
-              text-white
-              px-3 py-1
-              rounded
-          "
-
-          onClick={async () => {
-
-              const quantity = prompt(
-                  "Enter quantity received:"
-              );
-
-              if (!quantity) return;
-
-              await fetch(
-                  `/api/products/${product.id}/restock`,
-                  {
-                      method:"POST",
-
-                      headers:{
-                          "Content-Type":
-                          "application/json"
-                      },
-
-                      body: JSON.stringify({
-                          quantity:Number(quantity)
-                      })
-                  }
-              );
-
-              window.location.reload();
-
-          }}
-      >
-          Restock
-      </button>
+    <div className="max-w-3xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-6">
+        Edit product
+        </h1>
+        <ProductForm mode={"view"} product={product}/>
     </div>
   );
 }

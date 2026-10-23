@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import LoadingButton from "./loading_button";
 import '@/app/globals.css'
 
 export default function LogoutButton() {
@@ -16,11 +17,10 @@ export default function LogoutButton() {
   }
 
   return (
-    <button
+    <LoadingButton
       onClick={handleLogout}
-      className="bg-red-600 text-white px-3 py-2 rounded transform transition-transform duration-300 hover:scale-110"
-    >
+      className="bg-red-600 text-white px-3 py-2 rounded transform transition-transform duration-300 hover:scale-110" loading={false}>
       Logout
-    </button>
+    </LoadingButton>
   );
 }

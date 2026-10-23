@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(
   req: NextRequest
@@ -64,6 +65,14 @@ export async function POST(
 
     const response = NextResponse.json({
         success: true,
+    });
+
+    await logAudit({
+      userId: user.id,
+      action: "LOGIN",
+      entityName: "users",
+      recordId: user.id,
+      description: "User logged in",
     });
 
     response.cookies.set(

@@ -1,91 +1,164 @@
+import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { requireApiAuth } from "@/lib/auth";
 
 export async function GET() {
+  const auth = await requireApiAuth();
+
+  if (auth.response) {
+    return auth.response;
+  }
+
+  const currentUser = auth.user;
+  const businessId = currentUser.business_id;
+
   const connection = await pool.getConnection();
 
-  try{
-    const [accountsReceivable]: any = await connection.query(`
-      SELECT
-        COALESCE(SUM(total), 0) AS total
+  try {
+    // Accounts receivable
+    const [accountsReceivable]: any = await connection.query(
+      `
+      SELECT COALESCE(SUM(total), 0) AS total
       FROM invoices
       WHERE status = 'SENT'
-    `);
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [customerBalances]: any = await connection.query(`
+    // Customer balances
+    const [customerBalances]: any = await connection.query(
+      `
       SELECT
         customer_name,
         SUM(total) AS balance
       FROM invoices
       WHERE status = 'SENT'
+        AND business_id = ?
       GROUP BY customer_name
       ORDER BY balance DESC
-    `);
+      `,
+      [businessId]
+    );
 
-    const [outstandingInvoices]: any = await connection.query(`
+    // Outstanding invoices
+    const [outstandingInvoices]: any = await connection.query(
+      `
       SELECT
         invoice_number,
         customer_name,
         total,
         due_date
       FROM invoices
-      WHERE status = 'SENT'
+      WHERE status IN ('UNPAID', 'PARTIAL')
+        AND business_id = ?
       ORDER BY due_date ASC
       LIMIT 10
-    `);
+      `,
+      [businessId]
+    );
 
-    const [overdueInvoices]: any = await connection.query(`
+    // Overdue invoice count
+    const [overdueInvoices]: any = await connection.query(
+      `
       SELECT COUNT(*) AS total
       FROM invoices
       WHERE status = 'SENT'
-      AND due_date < CURDATE()
-    `);
+        AND due_date < CURDATE()
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [overdueAmount]: any = await connection.query(`
-      SELECT
-        COALESCE(SUM(total),0) AS total
+    // Overdue amount
+    const [overdueAmount]: any = await connection.query(
+      `
+      SELECT COALESCE(SUM(total), 0) AS total
       FROM invoices
       WHERE status = 'SENT'
-      AND DATE_ADD(invoice_date, INTERVAL 30 DAY) < CURDATE()
-    `);
+        AND DATE_ADD(invoice_date, INTERVAL 30 DAY) < CURDATE()
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [kpisResult] = await connection.query(`
+    // Dashboard KPIs
+    const [kpisResult]: any = await connection.query(
+      `
       SELECT
-        (SELECT COALESCE(SUM(total),0) FROM invoices) AS revenue,
-        (SELECT COUNT(*) FROM invoices) AS invoices,
-        (SELECT COUNT(*) FROM customers) AS customers,
-        (SELECT COUNT(*) FROM products) AS products
-    `);
+        (
+          SELECT COALESCE(SUM(total), 0)
+          FROM invoices
+          WHERE business_id = ?
+        ) AS revenue,
+        (
+          SELECT COUNT(*)
+          FROM invoices
+          WHERE business_id = ?
+        ) AS invoices,
+        (
+          SELECT COUNT(*)
+          FROM customers
+          WHERE business_id = ?
+        ) AS customers,
+        (
+          SELECT COUNT(*)
+          FROM products
+          WHERE business_id = ?
+        ) AS products
+      `,
+      [businessId, businessId, businessId, businessId]
+    );
 
-    const [revenueByMonth] = await connection.query(`
+    // Revenue by month
+    const [revenueByMonth]: any = await connection.query(
+      `
       SELECT
         DATE_FORMAT(invoice_date, '%b') AS month,
         SUM(total) AS revenue
       FROM invoices
+      WHERE business_id = ?
       GROUP BY month
       ORDER BY MIN(invoice_date)
-    `);
+      `,
+      [businessId]
+    );
 
-    const [topProducts] = await connection.query(`
+    // Top products, limited to invoices belonging to this business
+    const [topProducts]: any = await connection.query(
+      `
       SELECT
-        product_name AS product,
-        SUM(total) AS revenue
-      FROM invoice_items
-      GROUP BY product_name
+        ii.product_name AS product,
+        SUM(ii.total) AS revenue
+      FROM invoice_items ii
+      INNER JOIN invoices i
+        ON i.id = ii.invoice_id
+      WHERE i.business_id = ?
+      GROUP BY ii.product_name
       ORDER BY revenue DESC
       LIMIT 5
-    `);
+      `,
+      [businessId]
+    );
 
-    const [topCustomers] = await connection.query(`
+    // Top customers
+    const [topCustomers]: any = await connection.query(
+      `
       SELECT
         customer_name AS customer,
         SUM(total) AS total
       FROM invoices
+      WHERE business_id = ?
       GROUP BY customer_name
       ORDER BY total DESC
       LIMIT 5
-    `);
- 
-    const [recentInvoices] = await connection.query(`
+      `,
+      [businessId]
+    );
+
+    // Recent invoices
+    const [recentInvoices]: any = await connection.query(
+      `
       SELECT
         id,
         invoice_number,
@@ -93,85 +166,130 @@ export async function GET() {
         total,
         invoice_date AS date
       FROM invoices
+      WHERE business_id = ?
       ORDER BY created_at DESC
       LIMIT 5
-    `);
+      `,
+      [businessId]
+    );
 
-   
-    const [revenueByStatus] = await connection.query(`
+    // Revenue by invoice status
+    const [revenueByStatus]: any = await connection.query(
+      `
       SELECT
-          status,
-          SUM(total) AS total
+        status,
+        SUM(total) AS total
       FROM invoices
+      WHERE business_id = ?
       GROUP BY status
-    `);
+      `,
+      [businessId]
+    );
 
-    const revenueByStatusFormatted = (revenueByStatus as any[]).map(
-      (row) => ({
+    const revenueByStatusFormatted = revenueByStatus.map(
+      (row: any) => ({
         ...row,
         total: Number(row.total),
       })
     );
 
-    const [customerRows]: any = await pool.query(`
-        SELECT COUNT(*) AS total
-        FROM customers
-    `);
+    // Customer count
+    const [customerRows]: any = await connection.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM customers
+      WHERE business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [productRows]: any = await pool.query(`
-        SELECT COUNT(*) AS total
-        FROM products
-    `);
+    // Product count
+    const [productRows]: any = await connection.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM products
+      WHERE business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [invoiceRows]: any = await pool.query(`
-        SELECT COUNT(*) AS total
-        FROM invoices
-    `);
+    // Invoice count
+    const [invoiceRows]: any = await connection.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM invoices
+      WHERE business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [monthlyRevenue]: any = await pool.query(`
-        SELECT
-        COALESCE(SUM(total),0) AS total
-        FROM invoices
-        WHERE MONTH(invoice_date) = MONTH(CURDATE())
+    // Current month's revenue
+    const [monthlyRevenue]: any = await connection.query(
+      `
+      SELECT COALESCE(SUM(total), 0) AS total
+      FROM invoices
+      WHERE MONTH(invoice_date) = MONTH(CURDATE())
         AND YEAR(invoice_date) = YEAR(CURDATE())
-    `);
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [yearlyRevenue]: any = await pool.query(`
-        SELECT
-        COALESCE(SUM(total),0) AS total
-        FROM invoices
-        WHERE YEAR(invoice_date) = YEAR(CURDATE())
-    `);
+    // Current year's revenue
+    const [yearlyRevenue]: any = await connection.query(
+      `
+      SELECT COALESCE(SUM(total), 0) AS total
+      FROM invoices
+      WHERE YEAR(invoice_date) = YEAR(CURDATE())
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [lowStockCount]: any = await connection.query(`
-        SELECT COUNT(*) AS total
-        FROM products
-        WHERE stock_quantity <= 5
+    // Low-stock product count
+    const [lowStockCount]: any = await connection.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM products
+      WHERE stock_quantity <= 5
         AND stock_quantity > 0
-    `);
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [outOfStockCount]: any = await connection.query(`
-        SELECT COUNT(*) AS total
-        FROM products
-        WHERE stock_quantity = 0
-    `);
+    // Out-of-stock product count
+    const [outOfStockCount]: any = await connection.query(
+      `
+      SELECT COUNT(*) AS total
+      FROM products
+      WHERE stock_quantity = 0
+        AND business_id = ?
+      `,
+      [businessId]
+    );
 
-    const [lowStockProducts] = await connection.query(`
-        SELECT
-            id,
-            sku,
-            name,
-            stock_quantity
-        FROM products
-        WHERE stock_quantity <= 5
-        ORDER BY stock_quantity ASC
-        LIMIT 10
-    `);
+    // Low-stock products
+    const [lowStockProducts]: any = await connection.query(
+      `
+      SELECT
+        id,
+        sku,
+        name,
+        stock_quantity
+      FROM products
+      WHERE stock_quantity <= 5
+        AND business_id = ?
+      ORDER BY stock_quantity ASC
+      LIMIT 10
+      `,
+      [businessId]
+    );
 
-    return Response.json({
+    return NextResponse.json({
       accountsReceivable: accountsReceivable[0].total,
-      customerBalances: customerBalances,
-      outstandingInvoices: outstandingInvoices,
+      customerBalances,
+      outstandingInvoices,
       overdueInvoices: overdueInvoices[0].total,
       overdueAmount: overdueAmount[0].total,
       lowStockCount: lowStockCount[0].total,
@@ -192,9 +310,16 @@ export async function GET() {
       revenueByStatusFormatted,
       lowStockProducts,
 
-      kpis: (kpisResult as any)[0],
+      kpis: kpisResult[0],
     });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch dashboard data" },
+      { status: 500 }
+    );
   } finally {
-        connection.release();
+    connection.release();
   }
 }

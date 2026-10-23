@@ -1,4 +1,6 @@
 import pool from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import CustomerForm from "@/components/forms/customer_form";
 
 export default async function CustomerPage({
   params,
@@ -6,6 +8,7 @@ export default async function CustomerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const currentUser = await getCurrentUser();
 
   const [customerRows] = await pool.query(
     `
@@ -27,70 +30,12 @@ export default async function CustomerPage({
   }
 
   return (
-    <div className="mt-4 rounded-lg  border bg-white shadow-sm p-4">
-        <h3 className="font-semibold text-lg mb-3">
-        Customer Details
-        </h3>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">
+        Edit Customer
+      </h1>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-            <div className="text-gray-500">
-            Name
-            </div>
-
-            <div>
-            {customer.name}
-            </div>
-        </div>
-
-        <div>
-            <div className="text-gray-500">
-            Phone
-            </div>
-
-            <div>
-            {customer.phone}
-            </div>
-        </div>
-
-        <div className="col-span-2">
-            <div className="text-gray-500">
-            Address
-            </div>
-
-            <div className="whitespace-pre-line">
-            {customer.address}
-            </div>
-        </div>
-
-        <div>
-            <div className="text-gray-500">
-            Email
-            </div>
-
-            <div>
-            {customer.email}
-            </div>
-        </div>
-        <div>
-            <div className="text-gray-500">
-            Notes
-            </div>
-
-            <div>
-            {customer.notes}
-            </div>
-        </div>
-        <div>
-            <div className="text-gray-500">
-            Created On
-            </div>
-
-            <div>
-              {new Date(customer.created_at).toLocaleDateString()}
-            </div>
-        </div>
-      </div>
+      <CustomerForm mode="view" customer={customer}/>
     </div>
   );
 }

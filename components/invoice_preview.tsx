@@ -1,7 +1,6 @@
 import { InvoiceData } from "@/types/invoice";
 import Image from "next/image";
-import PrintButton from "./buttons/print_button";
-import UpdateStatusBtn from "./buttons/update_status_btn";
+
 
 type Props = {
   invoice: InvoiceData;
@@ -9,7 +8,7 @@ type Props = {
 
 export default function InvoicePreview({ invoice }: Props) {
   return (
-    <div className="max-w-4xl mx-auto p-10 bg-white text-black">
+    <div className="invoice-preview max-w-4xl mx-auto p-10 bg-white text-black">
       <h1 className="text-center text-3xl">Tax Invoice</h1>
       <h4 className="text-center text-md">VAT Registration # 6709227059</h4>
       <div className="flex justify-between my-8">
@@ -59,8 +58,10 @@ export default function InvoicePreview({ invoice }: Props) {
           <p className="whitespace-pre-line">
             {invoice.customer_address}
           </p>
-        </div>
-        
+          <p>{invoice.customer_city}</p>
+          <p>{invoice.customer_state}</p>
+          <p>{invoice.customer_country}</p>
+        </div> 
       </div>
 
       <table className="w-full border-collapse border mb-8">
@@ -128,16 +129,6 @@ export default function InvoicePreview({ invoice }: Props) {
       <p className="text-xs">Thank you for your business and have a great day!</p>
       <p className="text-xs">PLEASE MAKE CHEQUES PAYABLE TO GREEN OFFICE</p>
       <p className="text-xs mb-6">Return cheques will incur a charge of $50.00</p>
-
-      <PrintButton/>
-      <a
-        href={`/api/invoices/${invoice.invoice_number}/pdf`}
-        target="_blank"
-        className="bg-blue-600 text-white px-4 py-2 rounded print:hidden"
-      >
-        Download PDF
-      </a>
-      <UpdateStatusBtn status='SENT' invoice_number={invoice.invoice_number}/>
     </div>
   );
 }

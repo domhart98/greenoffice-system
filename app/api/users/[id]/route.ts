@@ -1,151 +1,65 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
-
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import bcrypt from "bcryptjs";
-import { requireAuth } from "@/lib/auth";
+import { requireApiAuth } from "@/lib/auth";
+    
+export async function GET(req: NextRequest) {
+  const auth = await requireApiAuth();
 
-export async function PUT(
-  req: NextRequest,
-  {
-    params,
-  }: {
-    params: Promise<{ id: string }>;
-  }
-) {
-  const currentUser =
-    await requireAuth();
-
-  if (currentUser.role !== "ADMIN") {
-    return NextResponse.json(
-      {
-        success: false,
-      },
-      {
-        status: 403,
-      }
-    );
+  if (auth.response) {
+    return auth.response;
   }
 
-  const { id } = await params;
+  const currentUser = auth.user;
 
-  const body = await req.json();
-
-  if (body.password) {
-    const hashedPassword =
-      await bcrypt.hash(
-        body.password,
-        10
-      );
-
-    await pool.query(
-      `
-      UPDATE users
-      SET
-        username = ?,
-        role = ?,
-        password_hash = ?
-      WHERE id = ?
-      `,
-      [
-        body.username,
-        body.role,
-        hashedPassword,
-        id,
-      ]
-    );
-  } else {
-    await pool.query(
-      `
-      UPDATE users
-      SET
-        username = ?,
-        role = ?
-      WHERE id = ?
-      `,
-      [
-        body.username,
-        body.role,
-        id,
-      ]
-    );
-  }
-
-  return NextResponse.json({
-    success: true,
-  });
-}
-
-export async function DELETE(
-  req: NextRequest,
-  {
-    params,
-  }: {
-    params: Promise<{ id: string }>;
-  }
-) {
   try {
+    const search = req.nextUrl.searchParams.get("search") || "";
 
-    const currentUser =
-      await requireAuth();
+    let query = `
+      SELECT
+        u.id,
+        u.username,
+        u.role,
+        u.created_at,
+        u.email
+      FROM users u
+      INNER JOIN business_users bu
+        ON bu.user_id = u.id
+      WHERE bu.business_id = ?
+        AND bu.is_active = 1
+    `;
 
-    // Only admins may delete users
-    if (currentUser.role !== "ADMIN") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        {
-          status: 403,
-        }
-      );
+    const values: (string | number)[] = [
+      currentUser.business_id,
+    ];
+
+    if (search.trim()) {
+      query += `
+        AND (
+          CAST(u.id AS CHAR) LIKE ?
+          OR u.username LIKE ?
+          OR u.email LIKE ?
+        )
+      `;
+
+      const searchTerm = `%${search.trim()}%`;
+
+      values.push(searchTerm, searchTerm, searchTerm);
     }
 
-    const { id } = await params;
+    query += ` ORDER BY u.id ASC`;
 
-    // Prevent admin deleting himself
-    if (
-      currentUser.id === Number(id)
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "You cannot delete your own account.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+    const [rows] = await pool.query(query, values);
 
-    await pool.query(
-      `
-      DELETE FROM users
-      WHERE id = ?
-      `,
-      [id]
-    );
-
-    return NextResponse.json({
-      success: true,
-    });
-
+    return NextResponse.json(rows);
   } catch (error) {
-
-    console.error(error);
+    console.error("Error fetching business users:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to delete user",
+        error: "Failed to fetch users",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

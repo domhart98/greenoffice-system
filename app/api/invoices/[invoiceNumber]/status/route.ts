@@ -1,213 +1,212 @@
+import { NextRequest, NextResponse } from "next/server";
+import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import pool from "@/lib/db";
+import { requireApiAuth } from "@/lib/auth";
+
+type RouteContext = {
+  params: Promise<{ invoiceNumber: string }>;
+};
+
+type InvoiceRow = RowDataPacket & {
+  id: number;
+  invoice_number: number;
+  business_id: number;
+  status: string;
+  open_balance: number | string | null;
+};
+
+function canManageInvoices(role: string): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ invoiceNumber: string }> }
+  req: NextRequest,
+  { params }: RouteContext
 ) {
-  const body = await req.json();
-  const { invoiceNumber } = await params;
+  const auth = await requireApiAuth();
 
-  console.log("Body: ", body);
+  if (auth.response) {
+    return auth.response;
+  }
 
-  const validStatuses = [
-    "DRAFT",
-    "SENT",
-    "PAID",
-    "VOID",
-  ];
+  const currentUser = auth.user;
 
-  if (!validStatuses.includes(body.status)) {
-    return Response.json(
-      { error: "Invalid status" },
+  if (!canManageInvoices(currentUser.business_role)) {
+    return NextResponse.json(
+      { error: "You do not have permission to change invoice status." },
+      { status: 403 }
+    );
+  }
+
+  const { invoiceNumber: invoiceNumberParam } = await params;
+  const invoiceNumber = Number(invoiceNumberParam);
+
+  if (
+    !invoiceNumberParam ||
+    !Number.isSafeInteger(invoiceNumber) ||
+    invoiceNumber <= 0
+  ) {
+    return NextResponse.json(
+      { error: "Invalid invoice number." },
       { status: 400 }
     );
   }
 
-  const [invoiceRows] = await pool.query(
-    `
-    SELECT *
-    FROM invoices
-    WHERE invoice_number = ?
-    `,
-    [invoiceNumber]
-  );
+  let body: { status?: unknown };
 
-  const invoice = (invoiceRows as any[])[0];
-
-  if (!invoice) {
-    return Response.json(
-      { error: "Invoice not found" },
-      { status: 404 },
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON request body." },
+      { status: 400 }
     );
   }
 
-  const oldStatus = invoice.status;
-
-  if (
-    oldStatus !== "SENT" &&
-    body.status === "SENT"
-  ) {
-    // Retrieve invoice items
-    const [items]: any = await pool.query(
-      `
-      SELECT
-        product_id,
-        quantity
-      FROM invoice_items
-      WHERE invoice_id = ?
-      `,
-      [invoice.id]
+  if (typeof body.status !== "string") {
+    return NextResponse.json(
+      { error: "A valid status is required." },
+      { status: 400 }
     );
-
-    // Check stock availability
-    for (const item of items) {
-
-      const [productRows]: any = await pool.query(
-        `
-        SELECT
-          name,
-          stock_quantity
-        FROM products
-        WHERE id = ?
-        `,
-        [item.product_id]
-      );
-
-      const product = productRows[0];
-
-      if (!product) {
-        return Response.json(
-          {
-            success: false,
-            error: "Product not found"
-          },
-          { 
-            status: 404 
-          }
-        );
-      }
-      else if (product.stock_quantity < item.quantity) {
-        return Response.json(
-          {
-            success: false,
-            error:
-              `${product.name} only has ` +
-              `${product.stock_quantity} units available`
-          },
-          { status: 400 }
-        );
-      }
-      else {
-        await pool.query(
-          `
-          UPDATE products
-          SET stock_quantity =
-              stock_quantity - ?
-          WHERE id = ?
-          `,
-          [
-            item.quantity,
-            item.product_id
-          ]
-        );
-
-        await pool.query(`
-            INSERT INTO stock_movements (
-                product_id,
-                movement_type,
-                quantity,
-                reference_number
-            )
-            VALUES (?, 'SALE', ?, ?)
-        `,
-        [
-            item.product_id,
-            item.quantity,
-            invoiceNumber
-        ]);
-      }
-    }
   }
 
-  if (
-    oldStatus === "SENT" &&
-    (
-      body.status === "VOID" ||
-      body.status === "DRAFT"
-    )
-  ) {
-    const [invoiceRows]: any = await pool.query(
-      `
-      SELECT id
-      FROM invoices
-      WHERE invoice_number = ?
-      `,
-      [invoiceNumber]
-    );
-
-    const invoiceId = invoiceRows[0].id;
-
-    const [items]: any = await pool.query(
-      `
-      SELECT
-        product_id,
-        quantity
-      FROM invoice_items
-      WHERE invoice_id = ?
-      `,
-      [invoiceId]
-    );
-
-    for (const item of items) {
-
-      await pool.query(
-        `
-        UPDATE products
-        SET stock_quantity =
-          stock_quantity + ?
-        WHERE id = ?
-        `,
-        [
-          item.quantity,
-          item.product_id
-        ]
-      );
-    }
-  }
-  
-  const validTransitions = {
-    DRAFT: ["SENT", "VOID"],
-    SENT: ["PAID", "VOID", "DRAFT"],
-    PAID: [],
-    VOID: [],
-  };
-
-  if (
-    !validTransitions[
-      invoice.status as keyof typeof validTransitions
-    ].includes(body.status)
-  ) {
-    return Response.json(
+  // Status changes with financial or inventory consequences must use
+  // their dedicated API workflows.
+  if (body.status !== "VOID") {
+    return NextResponse.json(
       {
-        error: `Cannot change invoice from ${invoice.status} to ${body.status}`,
+        error:
+          "This endpoint only supports voiding draft invoices. " +
+          "Use the issue API to issue a draft invoice, the void API " +
+          "to void an issued invoice, and the payment workflow to " +
+          "mark an invoice as paid.",
       },
       { status: 400 }
     );
   }
 
-  await pool.query(
-    `
-    UPDATE invoices
-    SET status = ?
-    WHERE invoice_number = ?
-    `,
-    [body.status, invoiceNumber]
-  );
+  const connection = await pool.getConnection();
+  let transactionStarted = false;
 
-  return Response.json({
-    status: body.status,
-    invoice_number: invoiceNumber,
-    success: true,
-    message: `Status changed from ${invoice.status} to ${body.status}`,
-  });
+  try {
+    await connection.beginTransaction();
+    transactionStarted = true;
+
+    // Lock only an invoice belonging to the authenticated business.
+    const [invoiceRows] = await connection.query<InvoiceRow[]>(
+      `
+      SELECT
+        id,
+        invoice_number,
+        business_id,
+        status,
+        open_balance
+      FROM invoices
+      WHERE invoice_number = ?
+        AND business_id = ?
+      FOR UPDATE
+      `,
+      [invoiceNumber, currentUser.business_id]
+    );
+
+    if (invoiceRows.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return NextResponse.json(
+        { error: "Invoice not found." },
+        { status: 404 }
+      );
+    }
+
+    const invoice = invoiceRows[0];
+
+    // Only draft invoices can be voided through this endpoint.
+    // Issued invoices must use the dedicated void API so inventory
+    // can be restored and stock movements recorded.
+    if (invoice.status !== "DRAFT") {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return NextResponse.json(
+        {
+          error:
+            `Cannot void this invoice through the status API ` +
+            `because its current status is ${invoice.status}. ` +
+            "Use the dedicated void API for issued invoices.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const [updateResult] = await connection.query<ResultSetHeader>(
+      `
+      UPDATE invoices
+      SET status = 'VOID',
+          open_balance = 0
+      WHERE id = ?
+        AND business_id = ?
+        AND status = 'DRAFT'
+      `,
+      [invoice.id, currentUser.business_id]
+    );
+
+    if (updateResult.affectedRows !== 1) {
+      throw new Error("Invoice status changed unexpectedly.");
+    }
+
+    // Assumes audit_logs.business_id exists.
+    await connection.query(
+      `
+      INSERT INTO audit_logs (
+        business_id,
+        action,
+        entity_name,
+        record_id,
+        description,
+        old_values,
+        new_values
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        currentUser.business_id,
+        "UPDATE",
+        "invoices",
+        invoice.id,
+        `Draft invoice ${invoice.invoice_number} voided.`,
+        JSON.stringify({
+          status: invoice.status,
+          open_balance: invoice.open_balance,
+        }),
+        JSON.stringify({
+          status: "VOID",
+          open_balance: 0,
+        }),
+      ]
+    );
+
+    await connection.commit();
+    transactionStarted = false;
+
+    return NextResponse.json({
+      success: true,
+      invoice_number: invoice.invoice_number,
+      status: "VOID",
+      message: `Draft invoice ${invoice.invoice_number} has been voided.`,
+    });
+  } catch (error: unknown) {
+    if (transactionStarted) {
+      await connection.rollback();
+    }
+
+    console.error("Invoice status update error:", error);
+
+    return NextResponse.json(
+      { error: "Failed to update invoice status." },
+      { status: 500 }
+    );
+  } finally {
+    connection.release();
+  }
 }

@@ -5,6 +5,77 @@
   --foreground: #171717;
 }
 
+@layer base {
+  body {
+    font-family: var(--font-inter);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-manrope);
+  }
+
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-slate-900;
+  }
+
+  h2 {
+    @apply text-xl font-semibold tracking-tight text-slate-900;
+  }
+
+  h3 {
+    @apply text-lg font-semibold text-slate-900;
+  }
+
+  h4 {
+    @apply text-base font-semibold text-slate-900;
+  }
+}
+
+@layer components {
+  .form-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .form-section {
+    @apply p-6;
+  }
+
+  .form-section-title {
+    @apply text-base font-semibold text-slate-900;
+  }
+
+  .form-section-description {
+    @apply mt-1 text-sm text-slate-500;
+  }
+
+  .form-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  .form-input {
+    @apply h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500;
+  }
+
+  .form-textarea {
+    @apply min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500;
+  }
+
+  .form-select {
+    @apply h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500;
+  }
+
+  .form-primary-button {
+    @apply inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .form-secondary-button {
+    @apply inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -20,8 +91,36 @@
 }
 
 @media print {
-  .no-print {
-    display: none !important;
+  @page {
+    size: Letter;
+    margin: 0.5in;
+  }
+
+  html,
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .invoice-page-grid {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-print-preview {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-preview {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 
