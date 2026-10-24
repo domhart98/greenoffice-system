@@ -56,6 +56,10 @@ export async function POST(
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   if (!canIssueInvoices(currentUser.business_role)) {
     return NextResponse.json(
       { error: "You do not have permission to issue invoices." },

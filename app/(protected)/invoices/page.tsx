@@ -22,7 +22,7 @@ import { FilePen, Clock, CircleDollarSign, CircleCheck, CircleX, PlusCircle, Plu
 export default function InvoicesPage() {
 
   const router = useRouter();
-  const [invoices, setInvoices] = useState([]);
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [invoiceToDelete, setinvoiceToDelete] = useState<InvoiceData | null>(null);
@@ -124,7 +124,7 @@ export default function InvoicesPage() {
       }));
   }, [invoices]);
 
-  const columns: Column<(typeof invoices)[number]>[] = [
+  const columns: Column<InvoiceData>[] = [
     {
       key: "invoice_number",
       header: "Invoice #"
@@ -156,7 +156,8 @@ export default function InvoicesPage() {
       key: "status",
       header: "Status",
       render: (invoice) => {
-        const status = invoiceStatusStyles[invoice.status];
+        const invoiceStatus = invoice.status as keyof typeof invoiceStatusStyles;
+        const status = invoiceStatusStyles[invoiceStatus];
 
         if (!status) {
           return;

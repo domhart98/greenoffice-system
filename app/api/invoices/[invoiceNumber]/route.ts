@@ -31,6 +31,10 @@ export async function GET(
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   try {
     const { invoiceNumber } = await params;
 
@@ -107,6 +111,11 @@ export async function PUT(
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
+
   const businessId = currentUser.business_id;
 
   if (!canManageInvoices(currentUser.business_role)) {
@@ -433,6 +442,10 @@ export async function DELETE(
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
 
   if (!canManageInvoices(currentUser.business_role)) {
     return NextResponse.json(

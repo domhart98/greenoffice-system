@@ -27,6 +27,10 @@ export async function GET(
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   // Puppeteer needs the authentication cookie to access the invoice page.
   const authCookie = req.cookies.get("auth_token");
 

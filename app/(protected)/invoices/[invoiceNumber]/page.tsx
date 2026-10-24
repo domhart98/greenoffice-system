@@ -93,6 +93,7 @@ export default async function InvoicePage({
     customer_id: invoice.customer_id,
     customer_state: customer.state,
     customer_country: customer.country,
+    customer_postcode: customer.postal_code,
     customer_city: customer.city,
     customer_balance: customer.open_balance,
     customer_companyname: customer.company_name,

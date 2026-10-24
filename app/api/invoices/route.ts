@@ -20,6 +20,10 @@ export async function GET(req: NextRequest) {
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   try {
     const searchParams = req.nextUrl.searchParams;
 
@@ -91,6 +95,11 @@ export async function POST(req: Request) {
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
+  
   const businessId = currentUser.business_id;
 
   const connection = await pool.getConnection();

@@ -17,8 +17,8 @@ export async function GET(
 ) {
   const auth = await requireApiAuth();
 
-  if (auth.user) {
-    return auth.response;
+  if (!auth.user) {
+    return auth.response!;
   }
 
   const currentUser = auth.user;

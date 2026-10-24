@@ -194,7 +194,7 @@ export default function UsersPage() {
                     title="Delete user"
                     message={
                         userToDelete
-                            ? `Are you sure you want to delete "${userToDelete.name}"? This action cannot be undone.`
+                            ? `Are you sure you want to delete "${userToDelete.username}"? This action cannot be undone.`
                             : ""
                     }
                     loading={isDeleting}

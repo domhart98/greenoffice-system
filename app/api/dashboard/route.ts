@@ -10,6 +10,11 @@ export async function GET() {
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
+
   const businessId = currentUser.business_id;
 
   const connection = await pool.getConnection();

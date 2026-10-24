@@ -7,19 +7,18 @@ import RevenueChart from "./charts/revenue_chart";
 import TopProductsChart from "./charts/top_products_chart";
 import RevenueStatusChart from "./charts/revenue_status_chart";
 import LoadingSpinner from "./loading_spinner";
-import { getCurrentUser } from "@/lib/auth";
-import { User } from "@/types/user";
 import ProfitLossWidget from "./widgets/profit_loss_widget";
 import CashFlowWidget from "./widgets/cashflow_widget";
 import InvoicesWidget from "./widgets/invoices_widget";
 import SalesWidget from "./widgets/sales_widget";
 import ExpensesWidget from "./widgets/expenses_widget";
 import AccountsReceivableWidget from "./widgets/accounts_receivable_widget";
+import { CurrentUser } from "@/lib/auth";
 
 export default function Dashboard({
     user,
 }: {
-    user: User;
+    user: CurrentUser;
 }) {
     const [data, setData] = useState<any>(null);
 

@@ -6,15 +6,22 @@ import { logAudit } from "@/lib/audit";
 export async function POST() {
   const currentUser = await getCurrentUser();
 
+  if (!currentUser) {
+    (await cookies()).delete("auth_token");
+
+    return NextResponse.json(
+      { success: false, message: "Not authenticated" },
+      { status: 401 }
+    );
+  }
+
   await logAudit({
     userId: currentUser.id,
     action: "LOGOUT",
     entityName: "users",
     recordId: currentUser.id,
-    description: `${currentUser.name} logged out`,
+    description: `${currentUser.username} logged out`,
   });
-
-  (await cookies()).delete("auth_token");
 
   return NextResponse.json({
     success: true,
