@@ -31,6 +31,10 @@ export async function PATCH(
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   if (!canManageInvoices(currentUser.business_role)) {
     return NextResponse.json(
       { error: "You do not have permission to change invoice status." },

@@ -23,6 +23,10 @@ export async function GET(
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   try {
     const { id } = await params;
     const supplierId = Number(id);
@@ -76,6 +80,10 @@ export async function PUT(
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
 
   if (!canManageSuppliers(currentUser.business_role)) {
     return NextResponse.json(
@@ -188,6 +196,10 @@ export async function DELETE(
   }
 
   const currentUser = auth.user;
+
+  if (!currentUser) {
+    return;
+  }
 
   if (!canManageSuppliers(currentUser.business_role)) {
     return NextResponse.json(

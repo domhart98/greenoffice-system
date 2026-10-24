@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
 
   const currentUser = auth.user;
 
+  if (!currentUser) {
+    return;
+  }
+
   try {
     const search = req.nextUrl.searchParams.get("search") || "";
 
