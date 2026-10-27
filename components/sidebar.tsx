@@ -24,24 +24,24 @@ import {
 import "@/app/globals.css";
 
 type SidebarProps = {
-  role: string;
+  business_role: string;
 };
 
 type NavChild = {
   label: string;
   href: string;
-  roles?: string[];
+  business_roles?: string[];
 };
 
 type NavItem = {
   label: string;
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: string[];
+  business_roles?: string[];
   children?: NavChild[];
 };
 
-export default function Sidebar({ role }: SidebarProps) {
+export default function Sidebar({ business_role }: SidebarProps) {
   const pathname = usePathname();
 
   const [openMenus, setOpenMenus] = useState<string[]>([]);
@@ -51,78 +51,78 @@ export default function Sidebar({ role }: SidebarProps) {
       label: "Dashboard",
       href: "/",
       icon: LayoutDashboard,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+      business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
     },
     {
       label: "Sales",
       icon: ShoppingCart,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+      business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
       children: [
         {
           label: "Invoices",
           href: "/invoices",
-          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
         },
         {
           label: "Customers",
           href: "/customers",
-          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
         },
         {
           label: "Accounts Receivable",
           href: "/accounts-receivable",
-          roles: ["ADMIN", "MANAGER"],
+          business_roles: ["ADMIN", "OWNER"],
         },
         {
           label: "Payments",
           href: "/payments",
-          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
         },
       ],
     },
     {
       label: "Inventory",
       icon: Warehouse,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+      business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
       children: [
         {
           label: "Products",
           href: "/products",
-          roles: ["ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "EMPLOYEE", "VIEWER"],
         },
         {
           label: "Purchase Orders",
           href: "/purchase-orders",
-          roles: ["ADMIN", "MANAGER", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "VIEWER"],
         },
       ],
     },
     {
       label: "Expenses",
       icon: Receipt,
-      roles: ["ADMIN", "MANAGER", "VIEWER"],
+      business_roles: ["ADMIN", "OWNER", "VIEWER"],
       children: [
         {
           label: "Expenses",
           href: "/expenses",
-          roles: ["ADMIN", "MANAGER", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "VIEWER"],
         },
         {
           label: "Payees",
           href: "/payees",
-          roles: ["ADMIN", "MANAGER", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "VIEWER"],
         },
       ],
     },
     {
       label: "People",
       icon: UsersRound,
-      roles: ["ADMIN", "MANAGER", "VIEWER"],
+      business_roles: ["ADMIN", "OWNER", "VIEWER"],
       children: [
         {
           label: "Employees",
           href: "/employees",
-          roles: ["ADMIN", "MANAGER", "VIEWER"],
+          business_roles: ["ADMIN", "OWNER", "VIEWER"],
         },
       ],
     },
@@ -130,13 +130,13 @@ export default function Sidebar({ role }: SidebarProps) {
       label: "Users",
       href: "/users",
       icon: UserRoundCog,
-      roles: ["ADMIN"],
+      business_roles: ["ADMIN", "OWNER"],
     },
     {
       label: "Reports",
       href: "/reports",
       icon: FileText,
-      roles: ["ADMIN", "VIEWER"],
+      business_roles: ["ADMIN", "VIEWER", "OWNER"],
     },
   ];
 
@@ -196,8 +196,8 @@ export default function Sidebar({ role }: SidebarProps) {
           {navItems
             .filter(
               (item) =>
-                !item.roles ||
-                item.roles.includes(role)
+                !item.business_roles ||
+                item.business_roles.includes(business_role)
             )
             .map((item) => {
               const Icon = item.icon;
@@ -223,8 +223,8 @@ export default function Sidebar({ role }: SidebarProps) {
 
               const visibleChildren = item.children.filter(
                 (child) =>
-                  !child.roles ||
-                  child.roles.includes(role)
+                  !child.business_roles ||
+                  child.business_roles.includes(business_role)
               );
 
               if (visibleChildren.length === 0) {
@@ -308,14 +308,14 @@ export default function Sidebar({ role }: SidebarProps) {
           Logged in as:
 
           <span className="ml-1 font-semibold text-slate-900">
-            {role}
+            {business_role}
           </span>
         </div>
 
         <button
           type="button"
           onClick={async () => {
-            await fetch("/api/logout", {
+            await fetch("/api/auth/logout", {
               method: "POST",
             });
 

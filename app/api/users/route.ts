@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
       SELECT DISTINCT
         u.id,
         u.username,
-        u.role,
+        u.platform_role,
         u.created_at,
-        u.email
+        u.email,
+        bu.role as business_role
       FROM users u
       INNER JOIN business_users bu
         ON bu.user_id = u.id

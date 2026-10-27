@@ -7,8 +7,8 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-const canManagePayees = (role: string) =>
-  role === "OWNER" || role === "ADMIN";
+const canManagePayees = (business_role: string) =>
+  business_role === "OWNER" || business_role === "ADMIN";
 
 
 export async function GET(

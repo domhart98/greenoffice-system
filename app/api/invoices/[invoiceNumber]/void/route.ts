@@ -39,8 +39,8 @@ type ProductRow = RowDataPacket & {
   business_id: number;
 };
 
-function canManageInvoices(role: string): boolean {
-  return role === "OWNER" || role === "ADMIN";
+function canManageInvoices(business_role: string): boolean {
+  return business_role === "OWNER" || business_role === "ADMIN";
 }
 
 export async function POST(

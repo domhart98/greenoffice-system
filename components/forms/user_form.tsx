@@ -15,7 +15,7 @@ export default function UserForm({
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(user?.username || "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState(user?.role || "VIEWER");
+  const [role, setRole] = useState(user?.business_role || "VIEWER");
   const [email, setEmail] = useState(user?.email || "");
   const [isActive, setIsActive] = useState(user?.isActive || true);
   const [confirmPassword, setConfirmPassword] = useState("");

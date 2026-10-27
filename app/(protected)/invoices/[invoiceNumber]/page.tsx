@@ -142,61 +142,66 @@ export default async function InvoicePage({
   return (
     <div className="w-full mx-auto">
 
-      <div className="invoice-page-grid grid grid-cols-[minmax(0,1fr)_816px] gap-8 items-start justify-start p-8">
+      <div className="invoice-page-grid grid grid-cols-1 items-start gap-8 p-4 lg:p-8 xl:grid-cols-[794px_minmax(0,1fr)]">
         
         {/* Left Column - Invoice Preview*/}
-        <div className="invoice-print-preview">
+        <div className="invoice-print-preview w-full min-w-0">
           <InvoicePreview invoice={invoiceData}/>
         </div>
 
         {/* Right Column - Management */}
-        <div className="flex flex-col gap-8">
+        <div className="flex min-w-0 flex-col gap-8 xl:sticky xl:top-8 xl:self-start">
+
 
           <div className="grid grid-cols-2 gap-6">
-            {/* Invoice Actions */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
-              <InvoiceActions
-                invoiceId={invoice.id}
-                invoiceNumber={invoice.invoice_number}
-                customerId={invoice.customer_id}
-                status={invoice.status}
-              />
-            </div>
+            
 
-            {/* Outstanding Balance */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Payment Summary
-              </h3>
+            
+          </div>
 
-              <div className="space-y-4 text-sm">
+          {/* Invoice Actions */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
+            <InvoiceActions
+              invoiceId={invoice.id}
+              invoiceNumber={invoice.invoice_number}
+              customerId={invoice.customer_id}
+              status={invoice.status}
+            />
+          </div>
+
+          {/* Outstanding Balance */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Payment Summary
+            </h3>
+
+            <div className="space-y-4 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-600">Invoice Total</span>
+                <span className="font-medium tabular-nums text-slate-900">
+                  ${Number(invoice.total).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-600">Amount Paid</span>
+                <span className="font-medium tabular-nums text-slate-900">
+                  $
+                  {(
+                    Number(invoice.total) - Number(invoice.open_balance)
+                  ).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="border-t border-slate-200 pt-4">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-600">Invoice Total</span>
-                  <span className="font-medium tabular-nums text-slate-900">
-                    ${Number(invoice.total).toFixed(2)}
+                  <span className="font-semibold text-slate-800">
+                    Outstanding Balance
                   </span>
-                </div>
 
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-600">Amount Paid</span>
-                  <span className="font-medium tabular-nums text-slate-900">
-                    $
-                    {(
-                      Number(invoice.total) - Number(invoice.open_balance)
-                    ).toFixed(2)}
+                  <span className="text-xl font-bold tabular-nums text-emerald-700">
+                    ${Number(invoice.open_balance).toFixed(2)}
                   </span>
-                </div>
-
-                <div className="border-t border-slate-200 pt-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="font-semibold text-slate-800">
-                      Outstanding Balance
-                    </span>
-
-                    <span className="text-xl font-bold tabular-nums text-emerald-700">
-                      ${Number(invoice.open_balance).toFixed(2)}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -226,14 +231,6 @@ export default async function InvoicePage({
                       Date
                     </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Method
-                    </th>
-
-                    <th className="px-6 py-3 text-left">
-                      Reference
-                    </th>
-
                     <th className="px-6 py-3 text-right">
                       Amount
                     </th>
@@ -256,14 +253,6 @@ export default async function InvoicePage({
                         {new Date(
                           payment.payment_date
                         ).toLocaleDateString()}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {payment.payment_method}
-                      </td>
-
-                      <td className="px-6 py-4 text-slate-500">
-                        {payment.reference || "—"}
                       </td>
 
                       <td className="px-6 py-4 text-right font-medium">

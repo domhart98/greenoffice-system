@@ -7,8 +7,8 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-function isBusinessAdmin(role: string) {
-  return role === "OWNER" || role === "ADMIN";
+function isBusinessAdmin(business_role: string) {
+  return business_role === "OWNER" || business_role === "ADMIN";
 }
 
 export async function GET(

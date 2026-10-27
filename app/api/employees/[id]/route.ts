@@ -7,8 +7,8 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-function canManageEmployees(role: string | undefined) {
-  return role === "OWNER" || role === "ADMIN";
+function canManageEmployees(business_role: string | undefined) {
+  return business_role === "OWNER" || business_role === "ADMIN";
 }
 
 // GET: Fetch a single employee belonging to the current business

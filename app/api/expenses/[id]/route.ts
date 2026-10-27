@@ -6,8 +6,8 @@ type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
-const canEditExpenses = (role: string) =>
-  role === "OWNER" || role === "ADMIN";
+const canEditExpenses = (business_role: string) =>
+  business_role === "OWNER" || business_role === "ADMIN";
 
 export async function GET(_req: Request, { params }: RouteParams) {
   try {

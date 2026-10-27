@@ -5,7 +5,7 @@ import UserForm from "@/components/forms/user_form";
 export default async function NewUserPage() {
     const currentUser = await requireAuth();
 
-    if (currentUser.role !== "ADMIN") {
+    if (currentUser.platform_role !== "ADMIN") {
         redirect("/");
     }
 

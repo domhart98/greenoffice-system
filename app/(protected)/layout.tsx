@@ -24,7 +24,7 @@ export default async function ProtectedLayout({
     <div  className="flex flex-col h-screen overflow-hidde bg-slate-50">
       <Navbar user={user}/>
       <div className="flex min-w-0 min-h-0 flex-1">
-        <Sidebar role={user.role} />
+        <Sidebar business_role={user.business_role} />
         <main className="min-w-0 min-h-0 flex-1 overflow-y-auto">
           {children}
         </main>

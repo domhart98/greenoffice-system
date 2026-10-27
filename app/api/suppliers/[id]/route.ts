@@ -7,8 +7,8 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-function canManageSuppliers(role: string | undefined) {
-  return role === "OWNER" || role === "ADMIN";
+function canManageSuppliers(business_role: string | undefined) {
+  return business_role === "OWNER" || business_role === "ADMIN";
 }
 
 export async function GET(

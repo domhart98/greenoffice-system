@@ -25,14 +25,14 @@ export default function UsersPage() {
     const [userToDelete, setuserToDelete] = useState<User | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const filters = useMemo(
-        () => [
-          {
-            key: "role" as keyof User,
-            value: role,
-          },
-        ],
-        [role]
-      );
+      () => [
+        {
+          key: "business_role" as keyof User,
+          value: role,
+        },
+      ],
+      [role]
+    );
     const table = useDataTable(
       users, 
       20,
@@ -54,7 +54,7 @@ export default function UsersPage() {
         sortable: true,
       },
       {
-        key: "role",
+        key: "business_role",
         header: "Role"
       }
       ,
@@ -82,7 +82,7 @@ export default function UsersPage() {
 
     const roleOptions = useMemo(() => {
           const values = users
-            .map((user: User) => user.role)
+            .map((user: User) => user.business_role)
             .filter(Boolean);
       
           return [...new Set(values)]
@@ -143,6 +143,8 @@ export default function UsersPage() {
     if (loading) {
       return <LoadingSpinner/>;
     }
+
+    console.log(users);
 
     return (
         <div className="flex h-full min-h-0 flex-col">
